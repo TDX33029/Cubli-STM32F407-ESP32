@@ -17,7 +17,9 @@ AUTO_STATE = STATE.replace('App:0','App:1').replace('EN:010','EN:000').replace('
     ',Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:1,Wheel:0.0,Rate:0.0,Angle:0.1,PoseTilt:0.1,TripDeg:20.0,VLimit:6.0,SLimit:330.0,Ref:1,AxesOK:1,DirOK:1,Axis1:2,D1:-1#')
 CORNER_AUTO_STATE = AUTO_STATE.replace('BMode:1','BMode:4').replace('Aligned:100','Aligned:111').replace(
     'Axis1:2,D1:-1#','Axis1:2,Axis2:3,Axis3:1,D1:-1,D2:-1,D3:-1,AxisMask:7,DirMask:7,CornerStart:1,'
-    'BTrim:0.0,TrimTune:1,CapDeg:0.50,Trim1:0.000,Trim2:0.000,Trim3:0.000#')
+    'BTrim:0.0,TrimTune:1,CapDeg:1.00,YawD:6.0,AttTau:0.25,'
+    'NOn:1,NTune:3,NPit:23.44,NRol:50.00,NOff:0.000,NLimit:5.00,NRate:0.30,NGain:0.000075,'
+    'Trim1:0.000,Trim2:0.000,Trim3:0.000#')
 class UpperTests(unittest.TestCase):
     def setUp(self):
         self.win = ui.MainWindow()
@@ -193,11 +195,12 @@ class UpperTests(unittest.TestCase):
 
     def test_corner_profile_waits_for_ack_and_fresh_matching_state(self):
         self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.win.last_learned_target=None
         self.win.btn_corner_profile.click()
         self.assertTrue(self.win.edge_profile_pending)
         queued=self.queued()
-        for command in ('BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BYAW 3','BTRIM 0','BTRIP 20','BFULL 250','BCAP 0.5',
-                        'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0',
+        for command in ('BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BYAW 6','BATTAU .25','BTRIM 0','BTRIP 20','BFULL 250','BCAP 1',
+                        'LQR1 80 5 -0.04 0','LQR2 80 5 -0.04 0','LQR3 80 5 -0.04 0','BNEUTRAL 1 0.000075 0.3 5',
                         'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731'):
             self.assertIn(command,queued)
         self.assertNotIn('BAUTO 1',queued)
@@ -208,14 +211,90 @@ class UpperTests(unittest.TestCase):
         self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('BTrim:0.0','BTrim:2.0'))
         self.assertTrue(self.win.edge_profile_pending)
         self.assertFalse(self.win.btn_auto_edge.isEnabled())
-        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('CapDeg:0.50','CapDeg:2.00'))
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('CapDeg:1.00','CapDeg:2.00'))
         self.assertTrue(self.win.edge_profile_pending)
         self.assertFalse(self.win.btn_auto_edge.isEnabled())
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('YawD:6.0','YawD:3.0'))
+        self.assertTrue(self.win.edge_profile_pending)
         self.win.worker._process_received_line(CORNER_AUTO_STATE)
         self.assertFalse(self.win.edge_profile_pending)
         self.assertTrue(self.win.btn_auto_edge.isEnabled())
-        self.assertAlmostEqual(self.win.balance_spins[2].value(),-.030)
+        self.assertAlmostEqual(self.win.balance_spins[2].value(),-.04)
         self.assertEqual(self.win.combo_balance.currentIndex(),3)
+
+    def test_corner_profile_neutral_seed_restore_and_out_of_range_skip(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertEqual(self.win.last_learned_target,(23.44,50.0))
+        self.assertIn('已开启',self.win.lbl_neutral.text())
+        self.assertIn('23.44',self.win.lbl_neutral.text())
+        self.win.worker.clear_pending()
+        self.win.btn_corner_profile.click()
+        self.assertIn('BNEUTRAL 1 0.000075 0.3 5 23.440000 50.000000',self.queued())
+        self.win._cancel_motion()
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.win.worker.clear_pending()
+        self.win.last_learned_target=(40.0,50.0)
+        self.win.btn_corner_profile.click()
+        self.assertIn('BNEUTRAL 1 0.000075 0.3 5',self.queued())
+        self.assertFalse(any('40.000000' in command for command in self.queued()))
+
+    def test_corner_profile_without_neutral_skips_bneutral(self):
+        self.win.chk_neutral.setChecked(False)
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.win.worker.clear_pending()
+        self.win.btn_corner_profile.click()
+        self.assertFalse(any(command.startswith('BNEUTRAL') for command in self.queued()))
+        self.win.worker._process_received_line('OK BREF')
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('NOn:1','NOn:0'))
+        self.assertFalse(self.win.edge_profile_pending)
+        self.assertIn('已关闭',self.win.lbl_neutral.text())
+
+    def test_timed_run_counts_after_takeover_and_stops(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.assertTrue(self.win.btn_timed_run.isEnabled())
+        self.win.worker.clear_pending()
+        self.win.btn_timed_run.click()
+        self.assertEqual(self.queued(),['BSTART 2'])
+        self.assertTrue(self.win.timed_run_armed)
+        self.assertFalse(self.win.btn_timed_run.isEnabled())
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('Bal:0','Bal:3'))
+        self.assertTrue(self.win.timed_run_active)
+        self.assertTrue(self.win.timed_run_timer.isActive())
+        self.assertIn('剩余',self.win.lbl_edge_detect.text())
+        self.win.worker.clear_pending()
+        self.win._timed_run_stop()
+        self.assertEqual(self.queued(),['BAL 0'])
+        self.assertFalse(self.win.timed_run_active)
+        self.assertIn('保留寻点学习',self.win.txt_log.toPlainText())
+
+    def test_timed_run_from_auto_stops_auto_then_arms(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('Auto:0','Auto:1').replace('Bal:0','Bal:3').replace('EdgeReady:1','EdgeReady:0'))
+        self.assertTrue(self.win.btn_timed_run.isEnabled())
+        self.win.worker.clear_pending()
+        self.win.btn_timed_run.click()
+        self.assertEqual(self.queued(),['BAUTO 0','BSTART 2'])
+        self.assertTrue(self.win.timed_run_armed)
+
+    def test_timed_run_cancels_on_trip(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        self.win.btn_timed_run.click()
+        self.assertTrue(self.win.timed_run_armed)
+        self.win.worker._process_received_line(CORNER_AUTO_STATE.replace('Bal:0','Bal:4'))
+        self.assertFalse(self.win.timed_run_armed)
+        self.assertFalse(self.win.timed_run_active)
+        self.assertFalse(self.win.timed_run_timer.isActive())
+        self.assertIn('保护停机',self.win.txt_log.toPlainText())
+
+    def test_invalid_neutral_fields_are_ignored(self):
+        self.win.worker._process_received_line(CORNER_AUTO_STATE)
+        before=self.win.device_state.copy()
+        for bad in (CORNER_AUTO_STATE.replace('NLimit:5.00','NLimit:6.00'),
+                    CORNER_AUTO_STATE.replace('NRate:0.30','NRate:0.60'),
+                    CORNER_AUTO_STATE.replace('NGain:0.000075','NGain:0.001000'),
+                    CORNER_AUTO_STATE.replace('NOff:0.000','NOff:-0.500'),
+                    CORNER_AUTO_STATE.replace('NOn:1','NOn:2')):
+            self.win.worker._process_received_line(bad)
+            self.assertEqual(self.win.device_state,before)
 
     def test_edge_profile_waits_for_ack_and_fresh_matching_state(self):
         self.win.worker._process_received_line(AUTO_STATE)

@@ -330,13 +330,29 @@ class SerialWorker(QThread):
                 if 'Enc' in fields and not re.fullmatch('[01]{3}', fields['Enc']):
                     raise ValueError('invalid encoder mask')
                 for key in ('VLimit', 'SLimit', 'TripDeg', 'PoseTilt', 'Angle', 'FullSpeed', 'Wheel', 'Rate', 'YawD',
-                            'Trim1', 'Trim2', 'Trim3', 'BTrim', 'CapDeg'):
+                            'Trim1', 'Trim2', 'Trim3', 'BTrim', 'CapDeg', 'AttTau',
+                            'NPit', 'NRol', 'NOff', 'NLimit', 'NRate', 'NGain'):
                     if key in fields:
                         fields[key] = float(fields[key])
                         if not math.isfinite(fields[key]):
                             raise ValueError('invalid limits')
                 if 'CapDeg' in fields and not .5 <= fields['CapDeg'] <= 10:
                     raise ValueError('invalid capture angle')
+                if 'AttTau' in fields and not .25 <= fields['AttTau'] <= 2:
+                    raise ValueError('invalid attitude tau')
+                if 'NLimit' in fields and not 2 <= fields['NLimit'] <= 5:
+                    raise ValueError('invalid neutral limit')
+                if 'NRate' in fields and not 0 < fields['NRate'] <= .5:
+                    raise ValueError('invalid neutral rate')
+                if 'NGain' in fields and not 0 < fields['NGain'] <= .00025:
+                    raise ValueError('invalid neutral gain')
+                if 'NOff' in fields and fields['NOff'] < 0:
+                    raise ValueError('invalid neutral offset')
+                for key, upper in (('NTune', 3), ('NOn', 1)):
+                    if key in fields:
+                        fields[key] = int(fields[key])
+                        if not 0 <= fields[key] <= upper:
+                            raise ValueError('invalid neutral tuning state')
                 if 'EncType' in fields:
                     fields['EncType'] = int(fields['EncType'])
                     if fields['EncType'] not in (0, 1):
@@ -1251,6 +1267,17 @@ class MainWindow(QMainWindow):
         self.sync_directions = False
         self.sync_axes = False
         self.active_motors = (False, False, False)
+        # 单点自动寻点：记住最近一次由固件学习到的控制目标（用于重载配置后 seed 恢复）
+        self.last_learned_target = None
+        self.corner_profile_neutral = False
+        self.corner_profile_neutral_expect = {}
+        # 限时平衡：BSTART 入位接管后计时运行，到时自动 BAL 0
+        self.timed_run_armed = False
+        self.timed_run_active = False
+        self.timed_run_seconds = 15
+        self.timed_run_timer = QTimer()
+        self.timed_run_timer.setSingleShot(True)
+        self.timed_run_timer.timeout.connect(self._timed_run_stop)
 
         # 波形历史数据队列 (示波器式平滑滚动缓冲)
         self.MAX_POINTS = 800
@@ -2118,6 +2145,9 @@ class MainWindow(QMainWindow):
         self.startup_auto_edge = False
         self.edge_profile_pending = False
         self.edge_profile_ack = False
+        self.timed_run_timer.stop()
+        self.timed_run_armed = False
+        self.timed_run_active = False
         if self.self_test_running:
             self.self_test_running = False
             self.self_test_queue = []
@@ -2207,11 +2237,18 @@ class MainWindow(QMainWindow):
             else (load_blockers[0] if load_blockers else '可加载已验证M1配置（保持失能）')
         start_hint = '自动已启用，按钮用于停止' if state.get('Auto') else (start_blockers[0] if start_blockers else
                      ('准备完成，可启动自动单点检测' if corner else '准备完成，可启动自动单边检测'))
-        self.lbl_edge_setup.setText(f'配置准备：{load_hint}\n自动启动：{start_hint}')
+        timed_hint = ('限时运行：已接管，计时结束后自动失能' if self.timed_run_active else
+                      '限时运行：等待入位接管后开始计时，PG6亮即松手' if self.timed_run_armed else None)
+        self.lbl_edge_setup.setText(f'配置准备：{load_hint}\n自动启动：{start_hint}' +
+            (f'\n{timed_hint}' if timed_hint else ''))
         self.btn_edge_profile.setToolTip('；'.join(load_blockers) if load_blockers else '恢复当前安装的49°参考和已验证参数，电机保持失能')
         self.btn_corner_profile.setToolTip('；'.join(corner_load_blockers) if corner_load_blockers else '恢复当前安装的顶点参考（23.44°/50°）和已验证参数，电机保持失能')
         self.btn_auto_edge.setToolTip('；'.join(start_blockers) if start_blockers and not state.get('Auto') else
             ('PG6亮即松手；超过20°或持续满速3秒后失能等待下次入位（单点三轴）' if corner else 'PG6亮即松手；超过20°或持续满速3秒后失能等待下次入位'))
+        self.btn_timed_run.setEnabled(connected and not self.self_test_running and not self.timed_run_armed and
+            (bool(state.get('Auto')) or not start_blockers))
+        self.btn_timed_run.setToolTip('；'.join(start_blockers) if start_blockers and not state.get('Auto') else
+            ('接管后计时运行，到时自动停止并失能；寻点学习保留，可连续多次运行（单点三轴）' if corner else '接管后计时运行，到时自动停止并失能'))
         self.btn_full_speed.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state)
 
     def _create_mode_panel(self):
@@ -2322,7 +2359,7 @@ class MainWindow(QMainWindow):
         self.btn_edge_profile.clicked.connect(self.action_load_edge_profile)
         auto_layout.addWidget(self.btn_edge_profile,3,0)
         self.btn_corner_profile = QPushButton('加载已验证单点配置（失能）')
-        self.btn_corner_profile.setToolTip('三轴自检完成且IMU静止校准后可加载。参考姿态仅适用于当前安装的顶点支撑角；参数80/5/-0.030/0，BYAW 3，6V。')
+        self.btn_corner_profile.setToolTip('三轴自检完成且IMU静止校准后可加载。参考姿态仅适用于当前安装的顶点支撑角；参数80/5/-0.04/0，BYAW 6，姿态τ0.25s，BCAP 1°，6V；已含实机验证的自动寻点（默认开启）。')
         self.btn_corner_profile.clicked.connect(self.action_load_corner_profile)
         auto_layout.addWidget(self.btn_corner_profile,3,1)
         self.spin_full_speed = NoWheelDoubleSpinBox()
@@ -2331,11 +2368,66 @@ class MainWindow(QMainWindow):
         self.btn_full_speed = QPushButton('设置满速阈值（先失能）')
         self.btn_full_speed.clicked.connect(self.action_set_full_speed)
         auto_layout.addWidget(self.btn_full_speed,5,0,1,2)
+        # 单点有界自动寻点 (BNEUTRAL / NTune3)：目标沿倾斜平面按轮速缓慢修正，逼近真实重心
+        self.chk_neutral = QCheckBox('启用自动寻点（单点）')
+        self.chk_neutral.setChecked(True)
+        self.chk_neutral.setToolTip('加载单点配置时下发 BNEUTRAL 1：目标在参考姿态附近按飞轮轮速慢速修正（总范围2~5°），缓慢逼近真实重心；要求 Ki=0、BTRIM=0')
+        auto_layout.addWidget(self.chk_neutral,6,0)
+        self.chk_neutral_seed = QCheckBox('重载配置时恢复学习目标')
+        self.chk_neutral_seed.setChecked(True)
+        self.chk_neutral_seed.setToolTip('把最近一次学习到的控制目标作为 seed 随 BNEUTRAL 恢复；仅在总范围以内时生效，超出则从参考锚点重新开始')
+        auto_layout.addWidget(self.chk_neutral_seed,6,1)
+        neutral_row = QHBoxLayout()
+        neutral_row.setSpacing(4)
+        self.spin_neutral_gain = NoWheelDoubleSpinBox()
+        self.spin_neutral_gain.setRange(0.000005, 0.00025)
+        self.spin_neutral_gain.setDecimals(6)
+        self.spin_neutral_gain.setSingleStep(0.000005)
+        self.spin_neutral_gain.setValue(0.000075)
+        self.spin_neutral_gain.setToolTip('寻点增益：轮速超出死区后每 rad/s 的目标移动比例')
+        self.spin_neutral_rate = NoWheelDoubleSpinBox()
+        self.spin_neutral_rate.setRange(0.01, 0.5)
+        self.spin_neutral_rate.setDecimals(2)
+        self.spin_neutral_rate.setSingleStep(0.05)
+        self.spin_neutral_rate.setValue(0.3)
+        self.spin_neutral_rate.setSuffix(' °/s')
+        self.spin_neutral_rate.setToolTip('目标最大移动速度（度/秒）')
+        self.spin_neutral_limit = NoWheelDoubleSpinBox()
+        self.spin_neutral_limit.setRange(2.0, 5.0)
+        self.spin_neutral_limit.setDecimals(1)
+        self.spin_neutral_limit.setSingleStep(0.5)
+        self.spin_neutral_limit.setValue(5.0)
+        self.spin_neutral_limit.setSuffix(' °')
+        self.spin_neutral_limit.setToolTip('相对原始参考锚点的总寻点范围（2~5°），超出立即夹紧')
+        neutral_row.addWidget(QLabel('增益'))
+        neutral_row.addWidget(self.spin_neutral_gain)
+        neutral_row.addWidget(QLabel('速率'))
+        neutral_row.addWidget(self.spin_neutral_rate)
+        neutral_row.addWidget(QLabel('范围'))
+        neutral_row.addWidget(self.spin_neutral_limit)
+        auto_layout.addLayout(neutral_row,7,0,1,2)
+        self.lbl_neutral = QLabel('固件寻点: 待加载单点配置')
+        self.lbl_neutral.setWordWrap(True)
+        self.lbl_neutral.setStyleSheet('font-size: 11px; color: #475569;')
+        auto_layout.addWidget(self.lbl_neutral,8,0,1,2)
+        # 限时平衡：用于复现验证过的定长试验（入位接管后计时，到时自动失能并保留寻点学习）
+        self.spin_timed_run = NoWheelDoubleSpinBox()
+        self.spin_timed_run.setRange(2, 300)
+        self.spin_timed_run.setDecimals(0)
+        self.spin_timed_run.setValue(15)
+        self.spin_timed_run.setSuffix(' 秒')
+        self.spin_timed_run.setToolTip('入位接管后计时运行时长；到时自动停止并失能（保留寻点学习）')
+        auto_layout.addWidget(QLabel('限时运行时长'),9,0)
+        auto_layout.addWidget(self.spin_timed_run,9,1)
+        self.btn_timed_run = QPushButton('启动限时平衡（到时自动停止）')
+        self.btn_timed_run.setToolTip('扶到目标窗口内，PG5倒计时、PG6亮即松手；接管后计时运行指定秒数，到时自动停止并失能。寻点学习保留，可直接再次启动。')
+        self.btn_timed_run.clicked.connect(self.action_start_timed_run)
+        auto_layout.addWidget(self.btn_timed_run,10,0,1,2)
         self.btn_auto_edge = QPushButton('启动自动单边（无固定时长）')
         self.btn_auto_edge.setToolTip('±3°、低角速度、飞轮低于5rad/s持续1秒后倒计时8秒。PG6亮即松手。超过20°或满速持续3秒后失能等待下次入位。急停/断连/硬故障退出自动模式。')
         self.btn_auto_edge.clicked.connect(self.action_toggle_auto_edge)
-        auto_layout.addWidget(self.btn_auto_edge,6,0,1,2)
-        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_corner_profile,self.btn_full_speed,self.btn_three_axis_test,self.btn_edge_imu_cal):button.setEnabled(False)
+        auto_layout.addWidget(self.btn_auto_edge,11,0,1,2)
+        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_corner_profile,self.btn_full_speed,self.btn_three_axis_test,self.btn_edge_imu_cal,self.btn_timed_run):button.setEnabled(False)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2381,13 +2473,74 @@ class MainWindow(QMainWindow):
         self.profile_kind = 'corner'
         self.edge_profile_pending = True;self.edge_profile_ack = False
         self.edge_profile_generation += 1;generation = self.edge_profile_generation
-        for command in ('APP 1','BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BU 6',
-                        'LQR1 80 5 -0.030 0','LQR2 80 5 -0.030 0','LQR3 80 5 -0.030 0','BYAW 3','BTRIM 0',
-                        'BTRIP 20','BFULL 250','BCAP 0.5',
-                        'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731','STATE?'):
+        for command in self._corner_profile_commands():
             self.worker.send_cmd(command)
         self.set_motor_controls_locked(True)
         QTimer.singleShot(5000, lambda: self._edge_profile_timeout(generation))
+
+    def _corner_profile_commands(self):
+        """单点已验证配置：80/5/-0.04/0、BYAW6、τ0.25、BCAP1、U6/L330/BU6，含可选有界自动寻点。"""
+        commands = ['APP 1','BMODE 4','BAXIS 2 3 1','BDIR -1 -1 -1','U 6','L 330','BU 6',
+                    'LQR1 80 5 -0.04 0','LQR2 80 5 -0.04 0','LQR3 80 5 -0.04 0','BYAW 6','BATTAU .25','BTRIM 0',
+                    'BTRIP 20','BFULL 250','BCAP 1',
+                    'BREF -0.7028287890572913 0.3977869310324257 0.5897433770480731']
+        neutral = bool(self.chk_neutral.isChecked())
+        self.corner_profile_neutral = neutral
+        if neutral:
+            commands.append(self._neutral_learning_command())
+            self.corner_profile_neutral_expect = {'NOn':1,'NTune':3,
+                'NLimit':self.spin_neutral_limit.value(),
+                'NGain':self.spin_neutral_gain.value(),
+                'NRate':self.spin_neutral_rate.value()}
+        else:
+            self.corner_profile_neutral_expect = {'NOn':0}
+        commands.append('STATE?')
+        return commands
+
+    def _neutral_learning_command(self):
+        gain = self.spin_neutral_gain.value()
+        rate = self.spin_neutral_rate.value()
+        limit = self.spin_neutral_limit.value()
+        return f'BNEUTRAL 1 {gain:.6f} {rate:g} {limit:g}' + self._neutral_seed_args()
+
+    def _neutral_seed_args(self):
+        """把最近一次学习到的目标角作为 seed（须在原锚点总范围锥内），否则从锚点重新开始。"""
+        if not self.chk_neutral_seed.isChecked() or self.last_learned_target is None:
+            return ''
+        pitch_deg, roll_deg = self.last_learned_target
+        p = math.radians(pitch_deg); r = math.radians(roll_deg)
+        seed = (-math.sin(r)*math.cos(p), math.sin(p), math.cos(r)*math.cos(p))
+        base = (-0.7028287890572913, 0.3977869310324257, 0.5897433770480731)
+        dot = max(-1.0, min(1.0, sum(a*b for a, b in zip(seed, base))))
+        if math.degrees(math.acos(dot)) > self.spin_neutral_limit.value() + 1e-6:
+            return ''
+        if any(abs(v) < .25 for v in seed):
+            return ''
+        return f' {pitch_deg:.6f} {roll_deg:.6f}'
+
+    def action_start_timed_run(self):
+        """限时平衡：入位倒计时启动，接管后计时，到时自动失能（保留寻点学习）。"""
+        if not self.btn_timed_run.isEnabled():return
+        state = self.device_state or {}
+        self._cancel_motion()
+        self.expected_state = {}
+        self.timed_run_seconds = int(self.spin_timed_run.value())
+        self.timed_run_armed = True
+        if state.get('App') != 1:
+            self.worker.send_cmd('APP 1')
+        if state.get('Auto'):
+            self.worker.send_cmd('BAUTO 0')
+        self.worker.send_cmd('BSTART 2' if state.get('BMode') == 4 else 'BSTART 8')
+        self.set_motor_controls_locked(True)
+        self.status_bar.showMessage(f'限时平衡已就绪：入位倒计时后自动计时 {self.timed_run_seconds} 秒，到时自动停止')
+
+    def _timed_run_stop(self):
+        if not (self.timed_run_armed or self.timed_run_active):return
+        self.timed_run_armed = False
+        self.timed_run_active = False
+        self.worker.send_cmd('BAL 0')
+        self.status_bar.showMessage(f'限时 {self.timed_run_seconds} 秒结束，已停止并失能；寻点学习保留')
+        self.append_log(f"<span style='color: #38bdf8;'>[限时] 运行 {self.timed_run_seconds} 秒结束，已停止并失能（保留寻点学习）。</span>")
 
     def _edge_profile_timeout(self, generation):
         if self.edge_profile_pending and self.edge_profile_generation == generation:
@@ -2440,15 +2593,17 @@ class MainWindow(QMainWindow):
                         if self.profile_kind == 'edge' else
                         {'App':1,'BMode':4,'Axis1':2,'Axis2':3,'Axis3':1,'D1':-1,'D2':-1,'D3':-1,
                          'AxisMask':7,'DirMask':7,'Ref':1,'EN':'000','TripDeg':20.0,'FullSpeed':250.0,'VLimit':6.0,'SLimit':330.0,
-                         'BTrim':0.0,'TrimTune':1,'CapDeg':0.5})
+                         'BTrim':0.0,'TrimTune':1,'CapDeg':1.0,'YawD':6.0,'AttTau':0.25,
+                         **self.corner_profile_neutral_expect})
             if all(state.get(k) == v for k,v in expected.items()):
                 self.edge_profile_pending = False
                 self.spin_vq.setValue(6);self.spin_vlim.setValue(330)
                 self.combo_gain_axis.setCurrentIndex(0)
-                gains = (80,5,-.045,0) if self.profile_kind == 'edge' else (80,5,-.030,0)
+                gains = (80,5,-.045,0) if self.profile_kind == 'edge' else (80,5,-.04,0)
                 for spin,value in zip(self.balance_spins,gains):spin.setValue(value)
+                neutral_note = '（自动寻点已启用）' if self.corner_profile_neutral and self.profile_kind == 'corner' else ''
                 self.status_bar.showMessage('M1单边配置已回读确认，电机失能；可启动自动单边检测'
-                    if self.profile_kind == 'edge' else '单点配置已回读确认，电机失能；可启动自动单点检测')
+                    if self.profile_kind == 'edge' else f'单点配置已回读确认{neutral_note}，电机失能；可启动自动单点或限时运行')
                 self.profile_kind = 'edge'
         if first_state and "VLimit" in state:
             self.spin_vq.setValue(float(state["VLimit"]))
@@ -2508,6 +2663,35 @@ class MainWindow(QMainWindow):
                 self.append_log(f"[{'单点' if corner else '单边'}保护] {reasons.get(reason,'未知')}；{'失能等待下次入位' if state['Auto'] else '自动已退出，需重新启动'}")
             self.last_balance_reason = reason
         else:self.lbl_edge_detect.setText('单边/单点自动检测需要支持BAUTO的固件，并需先选择对应模式')
+        if 'NOn' in state:
+            if state.get('NOn') and 'NPit' in state:
+                npit = float(state['NPit']); nrol = float(state['NRol'])
+                self.last_learned_target = (npit, nrol)
+                self.lbl_neutral.setText(
+                    f"固件寻点: 已开启 | 当前目标 {npit:.2f}°/{nrol:.2f}° | 偏移 {float(state.get('NOff',0)):.2f}°"
+                    f"（范围 {float(state.get('NLimit',0)):g}°，速率 {float(state.get('NRate',0)):g}°/s）")
+            elif state.get('NOn'):
+                self.lbl_neutral.setText('固件寻点: 已开启')
+            else:
+                memo = (f" | 记忆目标 {self.last_learned_target[0]:.2f}°/{self.last_learned_target[1]:.2f}°（重载配置时恢复）"
+                        if self.last_learned_target else '')
+                self.lbl_neutral.setText(f"固件寻点: 已关闭{memo}")
+        elif state.get('BMode') == 4 and state.get('Ref'):
+            self.lbl_neutral.setText('固件寻点: 当前固件未报告寻点状态（需NTune3固件）')
+        else:
+            self.lbl_neutral.setText('固件寻点: 加载单点配置并启用后可用（2~5°有界）')
+        if self.timed_run_armed and state.get('Bal') == 3 and not self.timed_run_active:
+            self.timed_run_active = True
+            self.timed_run_timer.start(self.timed_run_seconds * 1000)
+            self.append_log(f"<span style='color: #38bdf8;'>[限时] 已接管，计时 {self.timed_run_seconds} 秒，到时自动停止。</span>")
+        elif self.timed_run_armed and state.get('Bal') == 4:
+            self.timed_run_timer.stop()
+            self.timed_run_armed = False
+            self.timed_run_active = False
+            self.append_log("<span style='color: #f59e0b;'>[限时] 保护停机，计时取消。</span>")
+        if self.timed_run_active:
+            remaining = max(0, self.timed_run_timer.remainingTime()) / 1000.0
+            self.lbl_edge_detect.setText(self.lbl_edge_detect.text() + f"\n限时运行中：剩余 {remaining:.0f} 秒后自动停止并失能")
         if state.get('EncType') == 1:
             self.lbl_balance.setText(self.lbl_balance.text() + f"\nF4正交 CPR={state.get('C1', '?')}/{state.get('C2', '?')}/{state.get('C3', '?')}，计数器状态不能判断模块在线")
         self.set_motor_controls_locked(bool(self.expected_state) or self.self_test_running or bool(state['Trip']))
