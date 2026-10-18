@@ -1,0 +1,5 @@
+注意编码器报错1024，设备找不到0x06。
+设定GPIO配置IIC端口上拉，速率LOW，
+Parameter设定IIC Speed位Fast Mode
+
+1-3IIC读取正常.归档

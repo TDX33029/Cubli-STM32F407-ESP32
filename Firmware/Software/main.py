@@ -971,353 +971,6 @@ class Cubli3DWidget(QWidget):
 
 
 # =========================================================================
-# 单电机独立控制卡片组件 (MotorControlCard)
-# =========================================================================
-class MotorControlCard(QGroupBox):
-    """单个电机的控制面板，支持滑条、数值框、RPM换算、使能开关与预设按钮"""
-    sig_speed_changed = pyqtSignal(int, float)  # (motor_id, speed_rad_s)
-    sig_enable_changed = pyqtSignal(int, bool)   # (motor_id, enabled)
-
-    def __init__(self, motor_id, title, color="#3498db", parent=None):
-        super().__init__(title, parent)
-        self.motor_id = motor_id  # 1, 2, or 3
-        self.color = color
-        self._block_signals = False
-
-        self.init_ui()
-
-    def init_ui(self):
-        self.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #e2e8f0;
-                border-radius: 6px;
-                margin-top: 10px;
-                padding-top: 12px;
-                background-color: #ffffff;
-                color: #0f172a;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 12px;
-                padding: 0 4px;
-                color: #334155;
-            }
-        """)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 12, 10, 10)
-        layout.setSpacing(8)
-
-        # 顶部：使能状态与 RPM 换算显示
-        top_row = QHBoxLayout()
-        self.chk_enable = QCheckBox("驱动使能 (DRV8313)")
-        self.chk_enable.setChecked(True)
-        self.chk_enable.setStyleSheet("font-weight: bold; color: #059669;")
-        self.chk_enable.toggled.connect(self._on_enable_toggled)
-
-        self.lbl_rpm = QLabel("0.0 RPM")
-        self.lbl_rpm.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.lbl_rpm.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
-
-        top_row.addWidget(self.chk_enable)
-        top_row.addStretch()
-        top_row.addWidget(self.lbl_rpm)
-        layout.addLayout(top_row)
-
-        # 霍尔/MT6701 实时角度仪表盒
-        hall_box = QFrame()
-        hall_box.setStyleSheet("""
-            QFrame {
-                background-color: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 4px;
-                padding: 4px 6px;
-            }
-        """)
-        hall_layout = QVBoxLayout(hall_box)
-        hall_layout.setContentsMargins(4, 4, 4, 4)
-        hall_layout.setSpacing(4)
-
-        hall_header = QHBoxLayout()
-        lbl_h_title = QLabel("MT6701 角度/转速:")
-        lbl_h_title.setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
-        self.lbl_hall_status = QLabel("[离线]")
-        self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #94a3b8;")
-        self.lbl_act_speed = QLabel("0.0 rad/s")
-        self.lbl_act_speed.setStyleSheet("font-size: 11px; font-weight: bold; color: #0284c7; margin-right: 4px;")
-        self.lbl_hall_val = QLabel("0.0°")
-        self.lbl_hall_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
-
-        hall_header.addWidget(lbl_h_title)
-        hall_header.addWidget(self.lbl_hall_status)
-        hall_header.addStretch()
-        hall_header.addWidget(self.lbl_act_speed)
-        hall_header.addWidget(self.lbl_hall_val)
-        hall_layout.addLayout(hall_header)
-
-        # 0 ~ 360° 角度进度条
-        self.progress_angle = QProgressBar()
-        self.progress_angle.setRange(0, 3600)  # 0.1° 精度
-        self.progress_angle.setValue(0)
-        self.progress_angle.setTextVisible(False)
-        self.progress_angle.setFixedHeight(5)
-        self.progress_angle.setStyleSheet("""
-            QProgressBar {
-                background-color: #f1f5f9;
-                border: 1px solid #e2e8f0;
-                border-radius: 2px;
-            }
-            QProgressBar::chunk {
-                background-color: #3b82f6;
-                border-radius: 1px;
-            }
-        """)
-        hall_layout.addWidget(self.progress_angle)
-        layout.addWidget(hall_box)
-
-        # 中部：SpinBox + 滑条调节 (使用 NoWheel 控件，禁用滚轮误触)
-        mid_row = QHBoxLayout()
-        lbl_target = QLabel("目标转速:")
-        lbl_target.setStyleSheet("font-size: 12px; color: #475569;")
-
-        self.spin_speed = NoWheelDoubleSpinBox()
-        self.spin_speed.setRange(-180.0, 180.0)
-        self.spin_speed.setSingleStep(0.5)
-        self.spin_speed.setDecimals(2)
-        self.spin_speed.setSuffix(" rad/s")
-        self.spin_speed.setValue(0.0)
-        self.spin_speed.setFixedHeight(26)
-        self.spin_speed.setMinimumWidth(100)
-        self.spin_speed.setStyleSheet("""
-            QDoubleSpinBox {
-                background-color: #ffffff;
-                border: 1px solid #cbd5e1;
-                border-radius: 4px;
-                padding: 2px 6px;
-                font-size: 12px;
-                color: #0f172a;
-            }
-            QDoubleSpinBox:focus {
-                border-color: #3b82f6;
-            }
-        """)
-        self.spin_speed.valueChanged.connect(self._on_spin_changed)
-
-        mid_row.addWidget(lbl_target)
-        mid_row.addWidget(self.spin_speed)
-        layout.addLayout(mid_row)
-
-        # 禁用鼠标滚轮的水平滑块 (-180.0 ~ +180.0，以 10 倍整数映射)
-        self.slider = NoWheelSlider(Qt.Horizontal)
-        self.slider.setRange(-1800, 1800)
-        self.slider.setValue(0)
-        self.slider.setTickPosition(QSlider.TicksBelow)
-        self.slider.setTickInterval(100)
-        self.slider.setStyleSheet("""
-            QSlider::groove:horizontal {
-                border: 1px solid #cbd5e1;
-                height: 6px;
-                background: #e2e8f0;
-                border-radius: 3px;
-            }
-            QSlider::sub-page:horizontal {
-                background: #3b82f6;
-                border-radius: 3px;
-            }
-            QSlider::handle:horizontal {
-                background: #ffffff;
-                border: 2px solid #3b82f6;
-                width: 14px;
-                margin-top: -5px;
-                margin-bottom: -5px;
-                border-radius: 7px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #eff6ff;
-                border-color: #1d4ed8;
-            }
-        """)
-        self.slider.valueChanged.connect(self._on_slider_changed)
-        layout.addWidget(self.slider)
-
-        # 刻度标记
-        scale_row = QHBoxLayout()
-        lbl_scale_min = QLabel("-180")
-        lbl_scale_min.setStyleSheet("font-size: 10px; color: #94a3b8;")
-        lbl_scale_mid = QLabel("0")
-        lbl_scale_mid.setStyleSheet("font-size: 10px; color: #94a3b8;")
-        lbl_scale_max = QLabel("+180 rad/s")
-        lbl_scale_max.setStyleSheet("font-size: 10px; color: #94a3b8;")
-
-        scale_row.addWidget(lbl_scale_min)
-        scale_row.addStretch()
-        scale_row.addWidget(lbl_scale_mid)
-        scale_row.addStretch()
-        scale_row.addWidget(lbl_scale_max)
-        layout.addLayout(scale_row)
-
-        # 底部快捷按钮行 (紧凑素雅，适配窄屏)
-        btn_row = QHBoxLayout()
-        btn_row.setSpacing(4)
-        btn_row.setContentsMargins(0, 0, 0, 0)
-
-        self.preset_buttons = []
-        presets = [("-20", -20.0), ("-10", -10.0), ("0 停", 0.0), ("+10", 10.0), ("+20", 20.0)]
-        for text, val in presets:
-            btn = QPushButton(text)
-            btn.setFixedHeight(26)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #f8fafc;
-                    border: 1px solid #cbd5e1;
-                    border-radius: 4px;
-                    color: #334155;
-                    font-size: 11px;
-                    padding: 2px 4px;
-                    min-width: 32px;
-                }
-                QPushButton:hover {
-                    background-color: #e2e8f0;
-                    border-color: #94a3b8;
-                    color: #0f172a;
-                }
-                QPushButton:pressed {
-                    background-color: #cbd5e1;
-                }
-                QPushButton:disabled {
-                    background-color: #f1f5f9;
-                    border-color: #e2e8f0;
-                    color: #94a3b8;
-                }
-            """)
-            btn.clicked.connect(lambda _, v=val: self.set_speed(v, emit=True))
-            self.preset_buttons.append(btn)
-            btn_row.addWidget(btn)
-
-        self.btn_rev = QPushButton("反转")
-        self.btn_rev.setFixedHeight(26)
-        self.btn_rev.setStyleSheet("""
-            QPushButton {
-                background-color: #f1f5f9;
-                border: 1px solid #cbd5e1;
-                border-radius: 4px;
-                color: #334155;
-                font-size: 11px;
-                padding: 2px 4px;
-                min-width: 36px;
-            }
-            QPushButton:hover {
-                background-color: #e2e8f0;
-                border-color: #94a3b8;
-                color: #0f172a;
-            }
-            QPushButton:pressed {
-                background-color: #cbd5e1;
-            }
-            QPushButton:disabled {
-                background-color: #f1f5f9;
-                border-color: #e2e8f0;
-                color: #94a3b8;
-            }
-        """)
-        self.btn_rev.clicked.connect(self._on_reverse_clicked)
-        btn_row.addWidget(self.btn_rev)
-
-        layout.addLayout(btn_row)
-
-    def set_operable(self, operable: bool):
-        """启用或禁用所有主动控制控件 (滑条、数值框、使能复选框、预设按键)，但保持遥测读数显示"""
-        self.chk_enable.setEnabled(operable)
-        self.spin_speed.setEnabled(operable)
-        self.slider.setEnabled(operable)
-        if hasattr(self, 'btn_rev'):
-            self.btn_rev.setEnabled(operable)
-        if hasattr(self, 'preset_buttons'):
-            for btn in self.preset_buttons:
-                btn.setEnabled(operable)
-
-    def _on_enable_toggled(self, checked):
-        if checked:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #059669;")
-        else:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #dc2626;")
-        self.sig_enable_changed.emit(self.motor_id, checked)
-
-    def _on_spin_changed(self, val):
-        if self._block_signals:
-            return
-        self._block_signals = True
-        self.slider.setValue(int(round(val * 10)))
-        self._update_rpm_label(val)
-        self._block_signals = False
-        self.sig_speed_changed.emit(self.motor_id, val)
-
-    def _on_slider_changed(self, int_val):
-        if self._block_signals:
-            return
-        val = int_val / 10.0
-        self._block_signals = True
-        self.spin_speed.setValue(val)
-        self._update_rpm_label(val)
-        self._block_signals = False
-        self.sig_speed_changed.emit(self.motor_id, val)
-
-    def _on_reverse_clicked(self):
-        curr = self.spin_speed.value()
-        self.set_speed(-curr, emit=True)
-
-    def _update_rpm_label(self, rad_s):
-        rpm = rad_s * 9.5493
-        self.lbl_rpm.setText(f"{rpm:+.1f} RPM")
-
-    def set_hall_angle(self, angle_deg, online=True):
-        """更新霍尔/磁编码角度读数显示"""
-        # 规整到 0 ~ 359.9°
-        norm_deg = angle_deg % 360.0
-        if norm_deg < 0: norm_deg += 360.0
-
-        if online:
-            self.lbl_hall_status.setText("[正常]")
-            self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #059669;")
-            self.lbl_hall_val.setText(f"{norm_deg:05.1f}°")
-            self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #0f172a;")
-            self.progress_angle.setValue(int(norm_deg * 10))
-        else:
-            self.lbl_hall_status.setText("[离线]")
-            self.lbl_hall_status.setStyleSheet("font-size: 10px; font-weight: bold; color: #94a3b8;")
-            self.lbl_hall_val.setText(f"{norm_deg:05.1f}°")
-            self.lbl_hall_val.setStyleSheet("font-size: 13px; font-weight: bold; color: #94a3b8;")
-            self.progress_angle.setValue(0)
-
-    def set_actual_speed(self, speed_rad_s):
-        """更新实测反馈转速显示"""
-        self.lbl_act_speed.setText(f"{speed_rad_s:+.2f} rad/s")
-
-    def set_speed(self, val, emit=True):
-        """由外部程序更新当前速度设定"""
-        self._block_signals = True
-        self.spin_speed.setValue(val)
-        self.slider.setValue(int(round(val * 10)))
-        self._update_rpm_label(val)
-        self._block_signals = False
-        if emit:
-            self.sig_speed_changed.emit(self.motor_id, val)
-
-    def set_enable_state(self, enabled):
-        """外部同步使能状态"""
-        self.chk_enable.blockSignals(True)
-        self.chk_enable.setChecked(enabled)
-        if enabled:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #059669;")
-        else:
-            self.chk_enable.setStyleSheet("font-weight: bold; color: #dc2626;")
-        self.chk_enable.blockSignals(False)
-
-
-# =========================================================================
 # 硬件自检与安全互锁卡片组件 (SelfTestCard)
 # =========================================================================
 class SelfTestCard(QGroupBox):
@@ -1364,8 +1017,9 @@ class SelfTestCard(QGroupBox):
         status_row.addStretch()
         layout.addLayout(status_row)
 
-        # 2. 执行检测主按钮
-        self.btn_run_test = QPushButton("开始硬件自检")
+        # 2. 执行检测主按钮 (一键依次自检/对齐 M1/M2/M3)
+        self.btn_run_test = QPushButton("开始三轴自检/对齐")
+        self.btn_run_test.setToolTip("依次对 M1/M2/M3 执行电角度零位对齐；每个电机会短时转动，全部完成后保持失能。")
         self.btn_run_test.setFixedHeight(28)
         self.btn_run_test.setStyleSheet("""
             QPushButton {
@@ -1424,19 +1078,25 @@ class SelfTestCard(QGroupBox):
 
         layout.addLayout(grid)
 
-        # 4. 底部说明提示标签
-        self.lbl_hint = QLabel("选择调试轴后执行自检/对齐；每次仅驱动选中电机，完成后保持失能。")
+        # 4. 通道映射信息 (由 $STATE 的 Map/PP 字段刷新)
+        self.lbl_maps = QLabel("通道映射: --")
+        self.lbl_maps.setWordWrap(True)
+        self.lbl_maps.setStyleSheet("font-size: 10px; color: #64748b;")
+        layout.addWidget(self.lbl_maps)
+
+        # 5. 底部说明提示标签
+        self.lbl_hint = QLabel("点击一次依次完成 M1→M2→M3 电角度对齐；每次仅驱动一个电机，完成后保持失能。")
         self.lbl_hint.setWordWrap(True)
         self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
         layout.addWidget(self.lbl_hint)
 
     def set_testing_state(self, step_str=""):
         self.btn_run_test.setEnabled(False)
-        self.btn_run_test.setText("正在执行检测...")
-        msg = f"自检中 ({step_str})" if step_str else "自检中 (选中轴电角度对齐)"
+        self.btn_run_test.setText("正在执行三轴检测...")
+        msg = f"自检中 ({step_str})" if step_str else "自检中 (三轴依次对齐)"
         self.lbl_badge.setText(msg)
         self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #0369a1;")
-        self.lbl_hint.setText("正在对选中电机扫电角度并验证编码器位移，完成后自动失能。")
+        self.lbl_hint.setText("正在依次对 M1/M2/M3 扫电角度并验证编码器位移，完成后自动失能。")
         self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
     def set_step(self, motor_str):
@@ -1449,57 +1109,63 @@ class SelfTestCard(QGroupBox):
         except Exception:
             pass
 
+    def _apply_axis_status(self, i, info):
+        st = info.get('status', 'FAIL')
+        comm = info.get('comm', 0)
+        deg = info.get('deg', 0.0)
+
+        if st == 'PASS':
+            self.lbl_m_tags[i].setText("正常")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #15803d;")
+            self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #15803d;")
+        elif st in ('SKIP', 'NONE', 'UNINSTALLED'):
+            self.lbl_m_tags[i].setText("未检测")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
+            self.lbl_m_details[i].setText("本轮未检测")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
+        elif st == 'FAIL_MAP':
+            self.lbl_m_tags[i].setText("映射检测失败")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b45309;")
+            self.lbl_m_details[i].setText(f"未找到随该驱动运动的编码器 | 最大位移: {deg:.1f}°")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b45309;")
+        elif st == 'FAIL_ALIGN':
+            self.lbl_m_tags[i].setText("对齐失败")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b45309;")
+            self.lbl_m_details[i].setText(f"零位吸合未完成 | 映射转角: {deg:.1f}°")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b45309;")
+        elif "I2C" in st or st in ('OFFLINE', 'ENCODER_OFFLINE'):
+            self.lbl_m_tags[i].setText("编码器离线")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
+            self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}%")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
+        elif st in ('STALL', 'STALLED', 'FAIL_STALL'):
+            self.lbl_m_tags[i].setText("堵转")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
+            self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}% | 转角: {deg:.1f}°")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
+        else:
+            self.lbl_m_tags[i].setText("自检异常")
+            self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
+            self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}% | 转角: {deg:.1f}°")
+            self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
+
+    def set_axis_result(self, motor_idx, info):
+        """单个轴自检完成时立即刷新该轴状态（motor_idx: 1~3）"""
+        if 0 <= motor_idx - 1 < 3:
+            self._apply_axis_status(motor_idx - 1, info)
+
     def set_result(self, report):
         self.btn_run_test.setEnabled(True)
-        self.btn_run_test.setText("重新自检")
+        self.btn_run_test.setText("重新三轴自检")
 
-        all_pass = report.get('all_pass', False)
         for i, key in enumerate(['m1', 'm2', 'm3']):
-            info = report.get(key, {})
-            st = info.get('status', 'FAIL')
-            comm = info.get('comm', 0)
-            deg = info.get('deg', 0.0)
+            self._apply_axis_status(i, report.get(key, {}))
 
-            if st == 'PASS':
-                self.lbl_m_tags[i].setText("正常")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #15803d;")
-                self.lbl_m_details[i].setText(f"通信: {comm}% | 转角: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #15803d;")
-            elif st in ('SKIP', 'NONE', 'UNINSTALLED'):
-                self.lbl_m_tags[i].setText("未检测")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #64748b;")
-                self.lbl_m_details[i].setText("本轮未检测")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
-            elif st == 'FAIL_MAP':
-                self.lbl_m_tags[i].setText("映射检测失败")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b45309;")
-                self.lbl_m_details[i].setText(f"未找到随该驱动运动的编码器 | 最大位移: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b45309;")
-            elif st == 'FAIL_ALIGN':
-                self.lbl_m_tags[i].setText("对齐失败")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b45309;")
-                self.lbl_m_details[i].setText(f"零位吸合未完成 | 映射转角: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b45309;")
-            elif "I2C" in st or st in ('OFFLINE', 'ENCODER_OFFLINE'):
-                self.lbl_m_tags[i].setText("编码器离线")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
-                self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}%")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
-            elif st in ('STALL', 'STALLED', 'FAIL_STALL'):
-                self.lbl_m_tags[i].setText("堵转")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
-                self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}% | 转角: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
-            else:
-                self.lbl_m_tags[i].setText("自检异常")
-                self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #b91c1c;")
-                self.lbl_m_details[i].setText(f"状态: {st} | 通信: {comm}% | 转角: {deg:.1f}°")
-                self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #b91c1c;")
-
-        if all_pass:
+        if report.get('all_pass', False):
             self.lbl_badge.setText("自检通过 (已解锁)")
             self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #15803d;")
-            self.lbl_hint.setText("已安装的电机与霍尔编码器自检合格，通道已自动校准，控制功能已解锁。")
+            self.lbl_hint.setText("三轴电机与编码器自检合格，通道已自动校准，控制功能已解锁。")
             self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
         else:
             self.lbl_badge.setText("自检失败 (控制锁定)")
@@ -1512,18 +1178,28 @@ class SelfTestCard(QGroupBox):
                 self.lbl_hint.setText("存在自检异常轴；请结合各轴状态码、通信结果和串口日志检查。")
             self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
+    def set_axis_maps(self, state):
+        """由 $STATE 的 Map/PP 字段刷新通道映射信息"""
+        parts = []
+        for axis in range(1, 4):
+            enc = state.get(f'Map{axis}')
+            pp = state.get(f'PP{axis}')
+            if enc is not None and pp is not None:
+                parts.append(f"M{axis}→ENC{enc}(PP{pp})")
+        self.lbl_maps.setText("通道映射: " + " | ".join(parts) if parts else "通道映射: --")
+
     def reset_state(self, connected=False):
         self.btn_run_test.setEnabled(connected)
-        self.btn_run_test.setText("开始硬件自检")
+        self.btn_run_test.setText("开始三轴自检/对齐")
         if connected:
             self.lbl_badge.setText("待自检 (控制锁定)")
             self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #f59e0b;")
-            self.lbl_hint.setText("通信链路已连接。请先完成硬件自检，再操作电机。")
+            self.lbl_hint.setText("通信链路已连接。请先完成三轴自检/对齐，再进行平衡操作。")
             self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
         else:
             self.lbl_badge.setText("未连接 (控制锁定)")
             self.lbl_badge.setStyleSheet("font-size: 12px; font-weight: bold; color: #64748b;")
-            self.lbl_hint.setText("提示: 请先连接通信链路，再执行硬件自检。")
+            self.lbl_hint.setText("提示: 请先连接通信链路，再执行三轴自检/对齐。")
             self.lbl_hint.setStyleSheet("font-size: 10px; color: #64748b;")
 
         for i in range(3):
@@ -1531,6 +1207,8 @@ class SelfTestCard(QGroupBox):
             self.lbl_m_tags[i].setStyleSheet("font-size: 11px; font-weight: bold; color: #94a3b8;")
             self.lbl_m_details[i].setText("通信: -- | 转角: --")
             self.lbl_m_details[i].setStyleSheet("font-size: 11px; color: #64748b;")
+        if not connected:
+            self.lbl_maps.setText("通道映射: --")
 
 
 # =========================================================================
@@ -1539,7 +1217,7 @@ class SelfTestCard(QGroupBox):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Cubli 三轴驱动与状态监视")
+        self.setWindowTitle("Cubli 平衡控制上位机")
         self.resize(1440, 920)
         self.setMinimumSize(1260, 760)
 
@@ -1551,8 +1229,6 @@ class MainWindow(QMainWindow):
         self.worker.sig_log_rx.connect(self.on_log_rx)
         self.worker.sig_log_tx.connect(self.on_log_tx)
         self.worker.sig_telemetry.connect(self.on_telemetry_received)
-        self.worker.sig_mode_changed.connect(self.on_mode_changed)
-        self.worker.sig_pid_received.connect(self.on_pid_received)
         self.worker.sig_state.connect(self.on_state_received)
         self.worker.sig_lqr.connect(self.on_lqr_received)
         self.worker.sig_test_step.connect(self.on_self_test_step)
@@ -1561,6 +1237,8 @@ class MainWindow(QMainWindow):
         # 硬件自检与安全互锁状态 (True: 自检通过，允许操作; False: 锁定拦截)
         self.self_test_passed = False
         self.self_test_running = False
+        self.self_test_queue = []
+        self.self_test_results = {}
         self.device_state = None
         self.expected_state = {}
         self.edge_profile_pending = False
@@ -1572,7 +1250,6 @@ class MainWindow(QMainWindow):
         self.startup_edge_phase = 0
         self.sync_directions = False
         self.sync_axes = False
-        self.speed_mode = 0
         self.active_motors = (False, False, False)
 
         # 波形历史数据队列 (示波器式平滑滚动缓冲)
@@ -1603,15 +1280,6 @@ class MainWindow(QMainWindow):
         self.start_time = None
         self.tele_fps_counter = 0
         self.tele_last_fps_time = time.time()
-
-        # 滑条防抖定时器 (20ms)
-        self.debounce_timer = QTimer()
-        self.debounce_timer.setSingleShot(True)
-        self.debounce_timer.setInterval(20)
-        self.debounce_timer.timeout.connect(self._flush_speed_command)
-        self.pending_speed = [0.0, 0.0, 0.0]
-        self.pending_axes = set()
-        self.pending_flag = False
 
         # 波形定时刷新 (10 FPS); telemetry and 3D state remain event-driven.
         self.plot_timer = QTimer()
@@ -1906,122 +1574,15 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(8, 8, 8, 8)
         layout.setSpacing(8)
 
-        # 1. 硬件自检与安全互锁卡片 (处于最顶端，必须首先自检通过方可解锁操作)
+        # 1. 电机三轴自检/对齐与安全互锁卡片 (处于最顶端，三轴对齐后方可进行平衡操作)
         self.card_self_test = SelfTestCard()
         self.card_self_test.sig_start_test.connect(self.action_start_self_test)
         layout.addWidget(self.card_self_test)
+
+        # 2. 平衡控制卡片 (上位机仅保留平衡模式)
         layout.addWidget(self._create_mode_panel())
 
-        # 2. 三轴独立控制卡片 (素雅工控风，标题清晰注明定时器和引脚)
-        self.card_m1 = MotorControlCard(1, "M1 | TIM1 | EN PD0")
-        self.card_m2 = MotorControlCard(2, "M2 | TIM3 | EN PD1")
-        self.card_m3 = MotorControlCard(3, "M3 | TIM4 | EN PD2")
-        self.card_m1.setToolTip("PWM: PE9 / PE11 / PE13 | 编码器: I2C1")
-        self.card_m2.setToolTip("PWM: PA6 / PA7 / PB0 | 编码器: I2C2")
-        self.card_m3.setToolTip("PWM: PD12 / PD13 / PD14 | 编码器: I2C3")
-
-        self.card_m1.sig_speed_changed.connect(self.on_motor_speed_change)
-        self.card_m2.sig_speed_changed.connect(self.on_motor_speed_change)
-        self.card_m3.sig_speed_changed.connect(self.on_motor_speed_change)
-
-        self.card_m1.sig_enable_changed.connect(self.on_motor_enable_change)
-        self.card_m2.sig_enable_changed.connect(self.on_motor_enable_change)
-        self.card_m3.sig_enable_changed.connect(self.on_motor_enable_change)
-
-        layout.addWidget(self.card_m1)
-        layout.addWidget(self.card_m2)
-        layout.addWidget(self.card_m3)
-
-        # 3. 三轴联动同步卡片 (去除刺眼紫色边框和背景，统一素雅风格)
-        self.sync_group = QGroupBox("三轴同步联动 (Master / Sync)")
-        self.sync_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #e2e8f0;
-                border-radius: 6px;
-                margin-top: 8px;
-                padding-top: 10px;
-                background-color: #ffffff;
-                color: #0f172a;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 12px;
-                padding: 0 4px;
-                color: #334155;
-            }
-        """)
-        sync_layout = QVBoxLayout(self.sync_group)
-        sync_layout.setContentsMargins(10, 12, 10, 10)
-        sync_layout.setSpacing(8)
-
-        row_sync = QHBoxLayout()
-        row_sync.setSpacing(8)
-        lbl_s_target = QLabel("同步目标:")
-        lbl_s_target.setStyleSheet("font-size: 12px; color: #475569;")
-        row_sync.addWidget(lbl_s_target)
-
-        self.spin_sync = QDoubleSpinBox()
-        self.spin_sync.setRange(-180.0, 180.0)
-        self.spin_sync.setSingleStep(0.5)
-        self.spin_sync.setDecimals(2)
-        self.spin_sync.setSuffix(" rad/s")
-        self.spin_sync.setValue(0.0)
-        self.spin_sync.setFixedHeight(26)
-        self.spin_sync.setStyleSheet("""
-            QDoubleSpinBox {
-                background-color: #ffffff;
-                border: 1px solid #cbd5e1;
-                border-radius: 4px;
-                padding: 2px 6px;
-                color: #0f172a;
-            }
-        """)
-        row_sync.addWidget(self.spin_sync)
-
-        btn_sync_apply = QPushButton("一键同步三轴")
-        btn_sync_apply.setFixedHeight(26)
-        btn_sync_apply.clicked.connect(self.action_apply_sync)
-        row_sync.addWidget(btn_sync_apply)
-        sync_layout.addLayout(row_sync)
-
-        # 禁用鼠标滚轮的同步滑条
-        self.slider_sync = NoWheelSlider(Qt.Horizontal)
-        self.slider_sync.setRange(-1800, 1800)
-        self.slider_sync.setValue(0)
-        self.slider_sync.setStyleSheet("""
-            QSlider::groove:horizontal {
-                height: 6px;
-                background: #e2e8f0;
-                border: 1px solid #cbd5e1;
-                border-radius: 3px;
-            }
-            QSlider::sub-page:horizontal {
-                background: #3b82f6;
-                border-radius: 3px;
-            }
-            QSlider::handle:horizontal {
-                background: #ffffff;
-                border: 2px solid #3b82f6;
-                width: 14px;
-                margin-top: -5px;
-                margin-bottom: -5px;
-                border-radius: 7px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #eff6ff;
-                border-color: #1d4ed8;
-            }
-        """)
-        self.slider_sync.valueChanged.connect(lambda v: self.spin_sync.setValue(v / 10.0))
-        self.spin_sync.valueChanged.connect(lambda v: self.slider_sync.setValue(int(round(v * 10))))
-        sync_layout.addWidget(self.slider_sync)
-
-        layout.addWidget(self.sync_group)
-        self.sync_group.hide()
-
-        # 4. 电源与相电压安全参数 (去除彩色边框与刺眼青绿背景，规范排版与尺寸)
+        # 3. 参数配置与驱动限制 (平衡相关的最小参数集)
         self.param_group = QGroupBox("参数配置与驱动限制")
         self.param_group.setStyleSheet("""
             QGroupBox {
@@ -2046,7 +1607,7 @@ class MainWindow(QMainWindow):
         param_layout.setHorizontalSpacing(8)
         param_layout.setContentsMargins(10, 12, 10, 10)
 
-        # 相电压限制 Vq limit (最高可拉至 6.8V，充沛发挥 12V 硬件供电性能)
+        # 相电压限制 Vq limit (平衡整定常用 6V)
         lbl_vq = QLabel("相电压限制 (Vq):")
         self.spin_vq = QDoubleSpinBox()
         self.spin_vq.setRange(0.5, 6.8)
@@ -2062,7 +1623,7 @@ class MainWindow(QMainWindow):
         param_layout.addWidget(self.spin_vq, 0, 1)
         param_layout.addWidget(self.btn_set_vq, 0, 2)
 
-        # 速度上限 limit
+        # 速度上限 Limit (必须高于满速保护阈值)
         lbl_vlim = QLabel("极速限制 Limit:")
         self.spin_vlim = QDoubleSpinBox()
         self.spin_vlim.setRange(1.0, 360.0)
@@ -2089,142 +1650,12 @@ class MainWindow(QMainWindow):
         param_layout.addWidget(self.chk_tele, 2, 0, 1, 2)
         param_layout.addWidget(btn_query, 2, 2)
 
-        # 传感器与编码器查询按钮行 (并排对齐，素雅标准按钮)
-        sensor_row = QHBoxLayout()
-        sensor_row.setSpacing(6)
-        sensor_row.setContentsMargins(0, 0, 0, 0)
-
-        btn_query_imu = QPushButton("查询IMU")
-        btn_query_imu.setFixedHeight(26)
-        btn_query_imu.clicked.connect(lambda: self.worker.send_cmd("IMU"))
-
-        btn_sw_sensor = QPushButton("切换传感器")
-        btn_sw_sensor.setFixedHeight(26)
-        btn_sw_sensor.clicked.connect(self.action_switch_sensor)
-
         btn_query_hall = QPushButton("查询编码器(HALL)")
         btn_query_hall.setFixedHeight(26)
         btn_query_hall.clicked.connect(lambda: self.worker.send_cmd("HALL"))
-
-        sensor_row.addWidget(btn_query_imu)
-        sensor_row.addWidget(btn_sw_sensor)
-        sensor_row.addWidget(btn_query_hall)
-
-        param_layout.addLayout(sensor_row, 3, 0, 1, 3)
+        param_layout.addWidget(btn_query_hall, 3, 0, 1, 3)
 
         layout.addWidget(self.param_group)
-
-        # 5. 速度闭环与电角度标定卡片 (MT6701)
-        self.cl_group = QGroupBox("速度闭环控制与电角度标定 (MT6701)")
-        self.cl_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                border: 1px solid #e2e8f0;
-                border-radius: 6px;
-                margin-top: 8px;
-                padding-top: 10px;
-                background-color: #ffffff;
-                color: #0f172a;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top left;
-                left: 12px;
-                padding: 0 4px;
-                color: #334155;
-            }
-        """)
-        cl_layout = QVBoxLayout(self.cl_group)
-        cl_layout.setContentsMargins(10, 12, 10, 10)
-        cl_layout.setSpacing(8)
-
-        # 模式切换与校准按键行
-        mode_btn_row = QHBoxLayout()
-        mode_btn_row.setSpacing(6)
-
-        self.btn_mode_toggle = QPushButton("当前: 开环模式 [点击切闭环]")
-        self.btn_mode_toggle.setFixedHeight(26)
-        self.btn_mode_toggle.setStyleSheet("""
-            QPushButton {
-                background-color: #f1f5f9;
-                border: 1px solid #cbd5e1;
-                font-weight: bold;
-                color: #475569;
-            }
-            QPushButton:hover {
-                background-color: #e2e8f0;
-            }
-        """)
-        self.btn_mode_toggle.clicked.connect(self.action_toggle_control_mode)
-
-        btn_align = QPushButton("电角度零位对齐 (ALIGN)")
-        btn_align.setFixedHeight(26)
-        btn_align.clicked.connect(self.action_align_sensors)
-
-        mode_btn_row.addWidget(self.btn_mode_toggle)
-        mode_btn_row.addWidget(btn_align)
-        cl_layout.addLayout(mode_btn_row)
-
-        # PID 参数在线微调行
-        # PID 参数在线微调行
-        pid_row = QGridLayout()
-        pid_row.setHorizontalSpacing(5)
-        pid_row.setVerticalSpacing(6)
-
-        self.combo_pid_motor = NoWheelComboBox()
-        self.combo_pid_motor.addItems(["全部电机", "M1 (TIM1)", "M2 (TIM3)", "M3 (TIM4)"])
-        self.combo_pid_motor.setFixedHeight(24)
-        self.combo_pid_motor.setStyleSheet("font-size: 11px; font-weight: bold; padding: 1px 4px;")
-
-        lbl_p = QLabel("P:")
-        lbl_p.setStyleSheet("font-size: 11px; color: #64748b;")
-        self.spin_p = QDoubleSpinBox()
-        self.spin_p.setRange(0.0, 10.0)
-        self.spin_p.setSingleStep(0.05)
-        self.spin_p.setDecimals(3)
-        self.spin_p.setValue(0.200)
-        self.spin_p.setFixedHeight(24)
-
-        lbl_i = QLabel("I:")
-        lbl_i.setStyleSheet("font-size: 11px; color: #64748b;")
-        self.spin_i = QDoubleSpinBox()
-        self.spin_i.setRange(0.0, 50.0)
-        self.spin_i.setSingleStep(0.2)
-        self.spin_i.setDecimals(2)
-        self.spin_i.setValue(1.50)
-        self.spin_i.setFixedHeight(24)
-
-        lbl_d = QLabel("D:")
-        lbl_d.setStyleSheet("font-size: 11px; color: #64748b;")
-        self.spin_d = QDoubleSpinBox()
-        self.spin_d.setRange(0.0, 1.0)
-        self.spin_d.setSingleStep(0.001)
-        self.spin_d.setDecimals(4)
-        self.spin_d.setValue(0.0000)
-        self.spin_d.setFixedHeight(24)
-
-        btn_send_pid = QPushButton("下发PID")
-        btn_send_pid.setFixedHeight(24)
-        btn_send_pid.clicked.connect(self.action_send_pid)
-
-        btn_read_pid = QPushButton("读取PID")
-        btn_read_pid.setFixedHeight(24)
-        btn_read_pid.clicked.connect(self.action_read_pid)
-
-        pid_row.addWidget(self.combo_pid_motor, 0, 0, 1, 2)
-        pid_row.addWidget(lbl_p, 0, 2)
-        pid_row.addWidget(self.spin_p, 0, 3)
-        pid_row.addWidget(lbl_i, 0, 4)
-        pid_row.addWidget(self.spin_i, 0, 5)
-        pid_row.addWidget(lbl_d, 1, 0)
-        pid_row.addWidget(self.spin_d, 1, 1)
-        pid_row.addWidget(btn_send_pid, 1, 2, 1, 2)
-        pid_row.addWidget(btn_read_pid, 1, 4, 1, 2)
-        pid_row.setColumnStretch(3, 1)
-        pid_row.setColumnStretch(5, 1)
-        cl_layout.addLayout(pid_row)
-
-        layout.addWidget(self.cl_group)
         layout.addStretch()
 
         # 使用 QScrollArea 容器包裹左侧控制面板，彻底避免小屏下垂直挤压导致的文字变形与截断
@@ -2273,9 +1704,9 @@ class MainWindow(QMainWindow):
         status_card_bar.setSpacing(6)
         status_card_bar.setContentsMargins(0, 0, 0, 0)
 
-        self.card_stat_m1 = self._create_metric_box("M1 目标 / 实测转速", "0.0 / 0.0 rad/s")
-        self.card_stat_m2 = self._create_metric_box("M2 目标 / 实测转速", "0.0 / 0.0 rad/s")
-        self.card_stat_m3 = self._create_metric_box("M3 目标 / 实测转速", "0.0 / 0.0 rad/s")
+        self.card_stat_m1 = self._create_metric_box("M1 飞轮转速", "0.0 rad/s")
+        self.card_stat_m2 = self._create_metric_box("M2 飞轮转速", "0.0 rad/s")
+        self.card_stat_m3 = self._create_metric_box("M3 飞轮转速", "0.0 rad/s")
         self.card_stat_hall = self._create_metric_box("MT6701 角度 (H1 / H2 / H3)", "0.0° / 0.0° / 0.0°")
         self.card_stat_gyro = self._create_metric_box("陀螺仪 (Gx / Gy / Gz)", "0.0 / 0.0 / 0.0 dps")
         self.card_stat_fps = self._create_metric_box("通信状态与帧率", "0 FPS")
@@ -2687,19 +2118,26 @@ class MainWindow(QMainWindow):
         self.startup_auto_edge = False
         self.edge_profile_pending = False
         self.edge_profile_ack = False
-        self.debounce_timer.stop()
-        self.pending_flag = False
-        self.pending_speed = [0.0, 0.0, 0.0]
-        self.pending_axes.clear()
+        if self.self_test_running:
+            self.self_test_running = False
+            self.self_test_queue = []
+            self.card_self_test.reset_state(connected=bool(self.device_state))
         self.worker.clear_pending()
-        for card in (self.card_m1, self.card_m2, self.card_m3):
-            card.set_speed(0.0, emit=False)
-            card.set_enable_state(False)
 
     def _request_state_change(self, command, expected=None):
         self._cancel_motion()
         self.expected_state = expected or {}
         self.set_motor_controls_locked(True)
+        # 上位机仅保留平衡操作：自检/对齐自动切到调试模式(APP 0)，平衡启动自动切到工作模式(APP 1)
+        first = command.split(' ', 1)[0].upper()
+        if first in ('TEST', 'ALIGN', 'CALIB', 'CHECK'):
+            need = 0
+        elif first in ('BAL', 'BSTART', 'BAUTO'):
+            need = 1
+        else:
+            need = None
+        if need is not None and (self.device_state or {}).get('App') != need:
+            self.worker.send_cmd(f'APP {need}')
         self.worker.send_cmd(command)
 
     def set_motor_controls_locked(self, locked: bool, active_motors=None):
@@ -2707,40 +2145,30 @@ class MainWindow(QMainWindow):
         locked = locked or not self.device_state
         if active_motors is not None:
             self.active_motors = active_motors
-        debug = state.get('App', 0) == 0 and state.get('Bal', 0) == 0
-        for i, card in enumerate((self.card_m1, self.card_m2, self.card_m3), 1):
-            card.set_operable(not locked and debug and self.active_motors[i-1])
-            card.setVisible(state.get("App", 0) == 0)
-        self.sync_group.setEnabled(False)
-        self.cl_group.setEnabled(not locked and debug)
-        self.cl_group.setVisible(state.get("App", 0) == 0)
-        self.card_self_test.setVisible(state.get("App", 0) == 0)
-        self.balance_config.setVisible(state.get("App", 0) == 1)
-        self.auto_edge_group.setVisible(True)
         self.btn_set_vq.setEnabled(not locked)
         self.btn_set_vlim.setEnabled(not locked)
         self.btn_stop_all.setEnabled(True)
         connected = bool(self.worker.is_running and self.device_state)
+        busy = self.self_test_running or bool(self.expected_state) or self.edge_profile_pending
         self.mode_group.setEnabled(connected and not self.self_test_running)
-        self.combo_app.setEnabled(connected and not self.self_test_running)
-        self.combo_debug.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
         needed = self.active_motors if state.get('BMode') == 4 else (self.active_motors[state.get('BMode', 1)-1],)
-        self.btn_balance_start.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
-            state.get('App') == 1 and state.get('Bal', 0) in (0, 4) and bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 1)) and bool(state.get('AxesOK', 1)) and bool(state.get('DirOK', 1)) and all(needed))
-        self.btn_balance_countdown.setEnabled(connected and not self.self_test_running and not self.expected_state and not self.edge_profile_pending and
-            state.get('App') == 1 and (state.get('BMode', 1) != 4 or state.get('CornerStart') == 1) and state.get('Bal', 0) in (0, 4) and
+        self.btn_balance_start.setEnabled(connected and not busy and
+            state.get('Bal', 0) in (0, 4) and bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 1)) and bool(state.get('AxesOK', 1)) and bool(state.get('DirOK', 1)) and all(needed))
+        self.btn_balance_countdown.setEnabled(connected and not busy and
+            (state.get('BMode', 1) != 4 or state.get('CornerStart') == 1) and state.get('Bal', 0) in (0, 4) and
             bool(state.get('Cal')) and bool(state.get('IMU')) and bool(state.get('Ref', 0)) and bool(state.get('AxesOK', 0)) and bool(state.get('DirOK', 0)) and all(needed))
         self.btn_balance_countdown.setText('等待0.5°内入位，2秒倒计时后启动（单点）' if state.get('BMode') == 4 else '等待入位，8秒倒计时后启动（边沿）')
         self.btn_balance_countdown.setToolTip('单点需三轴对齐、映射与方向确认，并采集参考；PG5倒计时，PG6亮即松手。离位取消倒计时。'
             if state.get('BMode') == 4 and state.get('CornerStart') == 1 else
             ('当前固件不支持单点灯光倒计时，请更新固件' if state.get('BMode') == 4 else
              '先采集目标姿态；入位后PG5倒计时，离位取消；PG6亮即松手。'))
-        self.card_self_test.btn_run_test.setEnabled(connected and not self.self_test_running and state.get('App', 0) == 0)
-        self.btn_trip_angle.setEnabled(connected and not self.self_test_running and state.get('Bal', 0) in (0, 4))
+        can_test = connected and not busy and state.get('Bal', 0) in (0, 4)
+        self.card_self_test.btn_run_test.setEnabled(can_test)
+        self.btn_trip_angle.setEnabled(connected and not busy and state.get('Bal', 0) in (0, 4))
         idle = state.get('Bal', 0) in (0, 4) and state.get('EN') == '000' and not self.edge_profile_pending
         common = []
         if not connected:common.append('先连接上位机并等待设备状态')
-        if self.self_test_running:common.append('M1硬件自检进行中，请等待')
+        if self.self_test_running:common.append('三轴硬件自检进行中，请等待')
         if self.edge_profile_pending:common.append('配置正在加载，等待设备回读')
         if state.get('Bal') == 1:common.append('IMU正在校准，请保持机体静止')
         elif not idle:common.append('先停止当前控制，保持电机失能')
@@ -2748,7 +2176,7 @@ class MainWindow(QMainWindow):
         if state.get('Fault',0):common.append('先排除驱动故障')
         if 'Auto' not in state:common.append('需要支持自动平衡的固件')
         load_blockers = common.copy()
-        if not self.active_motors[0]:load_blockers.append('先点击“M1硬件自检”')
+        if not self.active_motors[0]:load_blockers.append('先完成三轴自检/对齐')
         if not state.get('Cal'):load_blockers.append('先点击“静止校准IMU”')
         if not state.get('IMU'):load_blockers.append('等待IMU恢复有效数据')
         corner_load_blockers = common.copy()
@@ -2757,10 +2185,10 @@ class MainWindow(QMainWindow):
         if not state.get('Cal'):corner_load_blockers.append('先点击“静止校准IMU”')
         if not state.get('IMU'):corner_load_blockers.append('等待IMU恢复有效数据')
         start_blockers = common.copy()
-        if not all(needed):start_blockers.append('先完成当前模式电机自检')
+        if not all(needed):start_blockers.append('先完成三轴自检/对齐')
         if not state.get('Cal'):start_blockers.append('先点击“静止校准IMU”')
         if not state.get('IMU'):start_blockers.append('等待IMU恢复有效数据')
-        if state.get('App')!=1 or state.get('BMode',4)>4 or not all(state.get(k) for k in ('Ref','AxesOK','DirOK')):
+        if state.get('BMode',4)>4 or not all(state.get(k) for k in ('Ref','AxesOK','DirOK')):
             start_blockers.append('先加载已验证单点配置' if state.get('BMode')==4 else '先加载已验证M1配置，恢复边沿、方向和参考')
         if state.get('BMode')==4 and not state.get('CornerStart'):
             start_blockers.append('固件需支持顶点倒计时（请更新）')
@@ -2773,7 +2201,7 @@ class MainWindow(QMainWindow):
                                    ('启动自动单点（无固定时长）' if corner else '启动自动单边（无固定时长）'))
         self.btn_edge_profile.setEnabled(not load_blockers)
         self.btn_corner_profile.setEnabled(not corner_load_blockers)
-        self.btn_edge_m1_test.setEnabled(connected and idle and not self.self_test_running and not self.expected_state)
+        self.btn_three_axis_test.setEnabled(can_test)
         self.btn_edge_imu_cal.setEnabled(connected and idle and not self.self_test_running and not self.expected_state and bool(state.get('IMU')))
         load_hint = (corner_load_blockers[0] if corner_load_blockers else '可加载已验证单点配置（保持失能）') if corner \
             else (load_blockers[0] if load_blockers else '可加载已验证M1配置（保持失能）')
@@ -2787,21 +2215,14 @@ class MainWindow(QMainWindow):
         self.btn_full_speed.setEnabled(connected and idle and not self.self_test_running and 'Auto' in state)
 
     def _create_mode_panel(self):
-        self.mode_group = QGroupBox("运行模式与平衡控制")
+        self.mode_group = QGroupBox("平衡控制")
         outer = QVBoxLayout(self.mode_group)
         layout = QGridLayout()
         outer.addLayout(layout)
-        self.combo_app = NoWheelComboBox()
-        self.combo_app.addItems(["调试模式（三电机独立）", "工作模式（平衡）"])
-        self.combo_app.activated.connect(lambda i: self._request_state_change(f"APP {i}", {'App': i}))
-        layout.addWidget(self.combo_app, 0, 0, 1, 2)
-        self.combo_debug = NoWheelComboBox()
-        self.combo_debug.addItems(["自检/对齐 M1", "自检/对齐 M2", "自检/对齐 M3"])
-        self.combo_debug.activated.connect(lambda i: self._request_state_change(f"DBG {i+1}", {'Dbg': i+1}))
-        layout.addWidget(self.combo_debug, 1, 0, 1, 2)
-        btn_reset = QPushButton("复位停机锁存（保持失能）")
-        btn_reset.clicked.connect(lambda: self._request_state_change(f"APP {(self.device_state or {}).get('App', 0)}"))
-        layout.addWidget(btn_reset, 2, 0, 1, 2)
+        btn_reset = QPushButton("复位安全停机锁存（保持失能）")
+        btn_reset.setToolTip("清除安全停机/急停锁存并保持电机失能；停止或急停后如无法启动，可先点此复位")
+        btn_reset.clicked.connect(self.action_reset_latch)
+        layout.addWidget(btn_reset, 0, 0, 1, 2)
         self.balance_config = QWidget()
         outer.addWidget(self.balance_config)
         layout = QGridLayout(self.balance_config)
@@ -2885,17 +2306,17 @@ class MainWindow(QMainWindow):
         self.lbl_edge_detect = QLabel('单边检测：等待设备状态')
         self.lbl_edge_detect.setWordWrap(True)
         auto_layout.addWidget(self.lbl_edge_detect,0,0,1,2)
-        self.lbl_edge_setup = QLabel('先连接设备，再完成M1自检与静止校准')
+        self.lbl_edge_setup = QLabel('先连接设备，再完成三轴自检与静止校准')
         self.lbl_edge_setup.setWordWrap(True)
         self.lbl_edge_setup.setStyleSheet('color: #b45309;')
         auto_layout.addWidget(self.lbl_edge_setup,1,0,1,2)
-        self.btn_edge_m1_test = QPushButton('M1硬件自检')
-        self.btn_edge_m1_test.setToolTip('仅检测M1，电机会短时转动；完成后保持失能')
-        self.btn_edge_m1_test.clicked.connect(self.action_prepare_edge_m1_test)
+        self.btn_three_axis_test = QPushButton('三轴自检/对齐')
+        self.btn_three_axis_test.setToolTip('依次检测 M1/M2/M3 并完成电角度对齐，电机会短时转动；完成后保持失能')
+        self.btn_three_axis_test.clicked.connect(self.action_start_self_test)
         self.btn_edge_imu_cal = QPushButton('静止校准IMU')
         self.btn_edge_imu_cal.setToolTip('机体静止后点击，校准期间保持不动；电机保持失能')
         self.btn_edge_imu_cal.clicked.connect(self.action_prepare_edge_imu_cal)
-        auto_layout.addWidget(self.btn_edge_m1_test,2,0);auto_layout.addWidget(self.btn_edge_imu_cal,2,1)
+        auto_layout.addWidget(self.btn_three_axis_test,2,0);auto_layout.addWidget(self.btn_edge_imu_cal,2,1)
         self.btn_edge_profile = QPushButton('加载已验证 M1 配置（失能）')
         self.btn_edge_profile.setToolTip('M1已对齐且IMU已静止校准后可加载。49°参考仅适用于当前安装与支撑棱；参数80/5/-0.045/0，6V。')
         self.btn_edge_profile.clicked.connect(self.action_load_edge_profile)
@@ -2914,7 +2335,7 @@ class MainWindow(QMainWindow):
         self.btn_auto_edge.setToolTip('±3°、低角速度、飞轮低于5rad/s持续1秒后倒计时8秒。PG6亮即松手。超过20°或满速持续3秒后失能等待下次入位。急停/断连/硬故障退出自动模式。')
         self.btn_auto_edge.clicked.connect(self.action_toggle_auto_edge)
         auto_layout.addWidget(self.btn_auto_edge,6,0,1,2)
-        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_corner_profile,self.btn_full_speed,self.btn_edge_m1_test,self.btn_edge_imu_cal):button.setEnabled(False)
+        for button in (self.btn_auto_edge,self.btn_edge_profile,self.btn_corner_profile,self.btn_full_speed,self.btn_three_axis_test,self.btn_edge_imu_cal):button.setEnabled(False)
         self.mode_group.setEnabled(False)
         return self.mode_group
 
@@ -2929,17 +2350,6 @@ class MainWindow(QMainWindow):
             self._request_state_change('BAUTO 0', {'Auto': 0})
         elif self.btn_auto_edge.isEnabled():
             self._request_state_change('BAUTO 1 2' if state.get('BMode') == 4 else 'BAUTO 1', {'Auto': 1})
-
-    def action_prepare_edge_m1_test(self):
-        if not self.btn_edge_m1_test.isEnabled():return
-        self._request_state_change('APP 0')
-        self.combo_debug.setCurrentIndex(0)
-        self.self_test_running = True
-        self.card_self_test.set_testing_state()
-        self.set_motor_controls_locked(True)
-        self.worker.send_cmd('DBG 1')
-        self.worker.send_cmd('TEST 1')
-        self.status_bar.showMessage('仅执行M1硬件自检，电机会短时转动；完成后保持失能')
 
     def action_prepare_edge_imu_cal(self):
         if self.btn_edge_imu_cal.isEnabled():
@@ -3057,23 +2467,15 @@ class MainWindow(QMainWindow):
                 if f"D{axis}" in state:
                     combo.setCurrentIndex(0 if state[f"D{axis}"] == 1 else 1)
             self.sync_directions = False
-        for axis, card in enumerate((self.card_m1, self.card_m2, self.card_m3), 1):
-            if f'Map{axis}' in state:
-                enc = state[f'Map{axis}']
-                pp = state.get(f'PP{axis}', '?')
-                card.setTitle(f"M{axis} | TIM{(1,3,4)[axis-1]} | EN PD{axis-1} | ENC{enc} | PP{pp}")
-                card.setToolTip(f"当前电机反馈来自编码器通道{enc}；极对数{pp}；编码器方向{state.get(f'Dir{axis}', '?')}")
+        self.card_self_test.set_axis_maps(state)
         self.active_motors = tuple(c == '1' for c in state['Aligned'])
         self.self_test_passed = any(self.active_motors)
         if all(state.get(k) == v for k, v in self.expected_state.items()):
             self.expected_state = {}
-        for combo, value in ((self.combo_app, state['App']), (self.combo_debug, state['Dbg']-1), (self.combo_balance, state['BMode']-1)):
-            combo.blockSignals(True)
-            combo.setCurrentIndex(value)
-            combo.blockSignals(False)
-        self.on_mode_changed(state['Mode'])
-        for card, en in zip((self.card_m1, self.card_m2, self.card_m3), state['EN']):
-            card.set_enable_state(en == '1')
+        combo = self.combo_balance
+        combo.blockSignals(True)
+        combo.setCurrentIndex(state['BMode']-1)
+        combo.blockSignals(False)
         capture_angle = float(state.get('CapDeg', .5 if state.get('BMode') == 4 else 10))
         entry_angle = min(capture_angle, 3)
         names = {0: '已失能', 1: 'IMU静止校准中', 2: f'等待{entry_angle:g}°接管窗口', 3: '平衡运行', 4: '跌倒/传感器保护，需手动重启', 5: '倒计时：靠近目标并扶稳，PG8常亮才可接管', 6: f'等待扶到目标{capture_angle:g}°内，电机失能', 7: '定时短力矩探测，结束自动失能'}
@@ -3116,25 +2518,38 @@ class MainWindow(QMainWindow):
                     QTimer.singleShot(0,self._startup_load_edge)
                 else:
                     self.startup_auto_edge = False
-                    self.status_bar.showMessage('自动启动未执行：先完成M1自检、IMU校准并确认固件支持自动单边')
+                    self.status_bar.showMessage('自动启动未执行：先完成三轴自检、IMU校准并确认固件支持自动单边')
             elif self.startup_edge_phase == 1 and not self.edge_profile_pending and self.edge_profile_ack:
                 self.startup_edge_phase = 2
                 QTimer.singleShot(0,self._startup_arm_edge)
 
     def action_start_self_test(self):
-        """用户点击开始自检按钮"""
+        """一键依次对三轴执行硬件自检与电角度对齐"""
         if not (self.worker.ser and self.worker.ser.is_open):
             QMessageBox.warning(self, "未连接设备", "请先连接上位机通信链路，再执行硬件自检。")
             return
+        if self.self_test_running:
+            return
 
+        self._cancel_motion()
         self.self_test_passed = False
         self.self_test_running = True
+        self.self_test_queue = [1, 2, 3]
+        self.self_test_results = {}
         self.set_motor_controls_locked(True)
         self.card_self_test.set_testing_state()
-        self._cancel_motion()
-        self.worker.send_cmd(f"TEST {self.combo_debug.currentIndex()+1}")
-        self.status_bar.showMessage("正在对选中轴执行自检与电角度对齐...")
-        self.append_log("<span style='color: #38bdf8;'>[自检] 开始选中轴电机与编码器检测...</span>")
+        # 自检/对齐必须在调试模式(APP 0)下执行；启动平衡时上位机会自动切回工作模式
+        self.worker.send_cmd("APP 0")
+        self._start_next_self_test_axis()
+        self.status_bar.showMessage("正在依次对 M1/M2/M3 执行自检与电角度对齐...")
+        self.append_log("<span style='color: #38bdf8;'>[自检] 开始三轴电机与编码器检测...</span>")
+
+    def _start_next_self_test_axis(self):
+        if not self.self_test_queue:
+            return
+        axis = self.self_test_queue.pop(0)
+        self.card_self_test.set_step(f"M{axis}")
+        self.worker.send_cmd(f"TEST {axis}")
 
     def on_self_test_step(self, step_str):
         """自检步骤更新: M1 / M2 / M3"""
@@ -3142,87 +2557,48 @@ class MainWindow(QMainWindow):
         self.status_bar.showMessage(f"正在自检 {step_str} 电机及对应霍尔编码器...")
 
     def on_self_test_report(self, report_data):
-        """自检完成汇总数据接收与结果展示"""
+        """自检完成汇总数据接收；三轴依次执行，全部结束后统一判定"""
+        if not self.self_test_running:
+            return
+        for idx, key in enumerate(('m1', 'm2', 'm3')):
+            info = report_data.get(key, {})
+            if info.get('status') not in (None, 'SKIP', 'NONE', 'UNINSTALLED'):
+                self.self_test_results[key] = info
+                self.card_self_test.set_axis_result(idx + 1, info)
+        if self.self_test_queue:
+            self._start_next_self_test_axis()
+            return
+
         self.self_test_running = False
-        all_pass = report_data.get('all_pass', False)
-        self.self_test_passed = all_pass
-        self.card_self_test.set_result(report_data)
-
-        m1_active = report_data.get('m1', {}).get('status') == 'PASS'
-        m2_active = report_data.get('m2', {}).get('status') == 'PASS'
-        m3_active = report_data.get('m3', {}).get('status') == 'PASS'
-
-        if all_pass:
-            self.set_motor_controls_locked(False, (m1_active, m2_active, m3_active))
-            self.status_bar.showMessage("硬件自检通过：已安装的电机与编码器正常，控制权限已解锁。")
-            self.append_log("<span style='color: #34d399; font-weight: bold;'>[自检] 自检通过：已安装的电机与编码器均正常，控制功能已解锁。</span>")
+        merged = {
+            key: self.self_test_results.get(key, {'status': 'SKIP', 'comm': 0, 'deg': 0.0})
+            for key in ('m1', 'm2', 'm3')
+        }
+        merged['all_pass'] = all(merged[key].get('status') == 'PASS' for key in ('m1', 'm2', 'm3'))
+        self.self_test_passed = merged['all_pass']
+        self.card_self_test.set_result(merged)
+        if merged['all_pass']:
+            self.status_bar.showMessage("三轴自检通过：电机与编码器正常，可以进行平衡操作。")
+            self.append_log("<span style='color: #34d399; font-weight: bold;'>[自检] 三轴自检通过：三个电机与编码器均正常。</span>")
         else:
-            self.set_motor_controls_locked(True)
-            self.status_bar.showMessage("硬件自检未通过：检测到异常，保持电机控制安全锁定。")
-            self.append_log("<span style='color: #f87171; font-weight: bold;'>[自检] 自检失败：检测到异常轴，请检查硬件连接后重试。</span>")
+            self.status_bar.showMessage("三轴自检未通过：检测到异常轴，保持电机控制安全锁定。")
+            self.append_log("<span style='color: #f87171; font-weight: bold;'>[自检] 三轴自检失败：请检查异常轴硬件连接后重试。</span>")
+        self.worker.send_cmd("STATE?")
 
     # =====================================================================
-    # 电机控制动作
+    # 平衡控制动作
     # =====================================================================
-    def on_motor_speed_change(self, motor_id, speed):
-        self.pending_speed[motor_id - 1] = speed
-        self.pending_axes.add(motor_id)
-        self.pending_flag = True
-        self.cube_widget.motor_speeds[motor_id - 1] = speed
-        if not self.debounce_timer.isActive():
-            self.debounce_timer.start()
-
-    def _flush_speed_command(self):
-        if self.pending_flag:
-            state = self.device_state or {}
-            if state.get("App") != 0 or state.get("Trip") or state.get("Bal") != 0 or self.expected_state:
-                self.pending_flag = False
-                self.pending_axes.clear()
-                return
-            for axis in sorted(self.pending_axes):
-                if self.active_motors[axis - 1]:
-                    self.worker.send_cmd(f"M{axis} {self.pending_speed[axis-1]:.2f}")
-            self.pending_flag = False
-            self.pending_axes.clear()
-
-    def on_motor_enable_change(self, motor_id, enabled):
-        val = 1 if enabled else 0
-        cmd = f"EN{motor_id} {val}"
-        self.worker.send_cmd(cmd)
-
-    def action_apply_sync(self):
-        val = self.spin_sync.value()
-        self.card_m1.set_speed(val, emit=False)
-        self.card_m2.set_speed(val, emit=False)
-        self.card_m3.set_speed(val, emit=False)
-        self.pending_speed = [val, val, val]
-        self.cube_widget.motor_speeds = [val, val, val]
-        cmd = f"M {val:.2f} {val:.2f} {val:.2f}"
-        self.worker.send_cmd(cmd)
+    def action_reset_latch(self):
+        """清除安全停机/急停锁存：以当前 App 模式重发 APP 命令（保持失能）"""
+        self._request_state_change(f"APP {(self.device_state or {}).get('App', 0)}")
 
     def action_stop_all(self):
-        self.card_m1.set_speed(0.0, emit=False)
-        self.card_m2.set_speed(0.0, emit=False)
-        self.card_m3.set_speed(0.0, emit=False)
-        self.spin_sync.setValue(0.0)
-        self.pending_speed = [0.0, 0.0, 0.0]
-        self.cube_widget.motor_speeds = [0.0, 0.0, 0.0]
         self._cancel_motion()
         self.worker.send_cmd("STOP")
 
     def action_emergency_stop(self):
-        self.card_m1.set_speed(0.0, emit=False)
-        self.card_m2.set_speed(0.0, emit=False)
-        self.card_m3.set_speed(0.0, emit=False)
-        self.card_m1.set_enable_state(False)
-        self.card_m2.set_enable_state(False)
-        self.card_m3.set_enable_state(False)
-        self.spin_sync.setValue(0.0)
-        self.pending_speed = [0.0, 0.0, 0.0]
-        self.cube_widget.motor_speeds = [0.0, 0.0, 0.0]
         self._cancel_motion()
         self.worker.send_cmd("STOP")
-
         self.status_bar.showMessage("紧急停止已触发: 电机转速归零并切断驱动使能！")
 
     def action_set_voltage_limit(self):
@@ -3233,87 +2609,9 @@ class MainWindow(QMainWindow):
         val = self.spin_vlim.value()
         self.worker.send_cmd(f"L {val:.2f}")
 
-    def action_switch_sensor(self):
-        self.worker.send_cmd("SENSOR 1")
-        self.status_bar.showMessage("已向固件发送激活 LSM6DSRTR (SPI2) 指令")
-
     def action_toggle_tele(self, checked):
         val = 1 if checked else 0
         self.worker.send_cmd(f"TELE {val}")
-
-    def action_toggle_control_mode(self):
-        self._request_state_change(f"MODE {1-self.speed_mode}")
-
-    def on_mode_changed(self, mode):
-        self.speed_mode = mode
-        self.btn_mode_toggle.setToolTip("快速变速请使用已完成对齐的闭环模式；开环仅用于低速调试。")
-        if mode == 1:
-            self.btn_mode_toggle.setText("闭环调速模式 [已开启]")
-            self.btn_mode_toggle.setStyleSheet("""
-                QPushButton {
-                    background-color: #dbeafe;
-                    border: 1px solid #3b82f6;
-                    font-weight: bold;
-                    color: #1d4ed8;
-                }
-                QPushButton:hover {
-                    background-color: #bfdbfe;
-                }
-            """)
-        else:
-            self.btn_mode_toggle.setText("开环低速模式 [点击切闭环]")
-            self.btn_mode_toggle.setStyleSheet("""
-                QPushButton {
-                    background-color: #f1f5f9;
-                    border: 1px solid #cbd5e1;
-                    font-weight: bold;
-                    color: #475569;
-                }
-                QPushButton:hover {
-                    background-color: #e2e8f0;
-                }
-            """)
-
-    def action_align_sensors(self):
-        self.self_test_running = True
-        self._request_state_change(f"ALIGN {self.combo_debug.currentIndex()+1}")
-        self.status_bar.showMessage("已触发电角度零位自动校准 (ALIGN)，等待转子静止")
-
-    def action_send_pid(self):
-        p = self.spin_p.value()
-        i = self.spin_i.value()
-        d = self.spin_d.value()
-        idx = self.combo_pid_motor.currentIndex()
-        if idx == 0:
-            self.worker.send_cmd(f"PID {p:.3f} {i:.3f} {d:.4f}")
-            self.status_bar.showMessage(f"已更新全部电机速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
-        else:
-            self.worker.send_cmd(f"PID{idx} {p:.3f} {i:.3f} {d:.4f}")
-            self.status_bar.showMessage(f"已更新电机 M{idx} 速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
-
-    def action_read_pid(self):
-        idx = self.combo_pid_motor.currentIndex()
-        if idx == 0:
-            self.worker.send_cmd("PID?")
-            self.status_bar.showMessage("已向固件查询速度环 PID 参数")
-        else:
-            self.worker.send_cmd(f"PID{idx}?")
-            self.status_bar.showMessage(f"已向固件查询电机 M{idx} 速度环 PID 参数")
-
-    def on_pid_received(self, motor_idx, p, i, d):
-        curr_idx = self.combo_pid_motor.currentIndex()
-        if curr_idx == motor_idx or motor_idx == 0 or (curr_idx == 0 and motor_idx == 1):
-            self.spin_p.blockSignals(True)
-            self.spin_i.blockSignals(True)
-            self.spin_d.blockSignals(True)
-            self.spin_p.setValue(p)
-            self.spin_i.setValue(i)
-            self.spin_d.setValue(d)
-            self.spin_p.blockSignals(False)
-            self.spin_i.blockSignals(False)
-            self.spin_d.blockSignals(False)
-            tag = "全部电机" if motor_idx == 0 else f"M{motor_idx}"
-            self.status_bar.showMessage(f"成功读取 {tag} 速度环 PID: P={p:.3f}, I={i:.3f}, D={d:.4f}")
 
     def action_reset_cube_attitude(self):
         """重置 3D 立方体姿态零位"""
@@ -3368,7 +2666,7 @@ class MainWindow(QMainWindow):
                 data['ax'], data['ay'], data['az']
             )
 
-        # 同步更新三轴霍尔/磁编码角度到对应控制卡片、3D立方体与顶部仪表栏
+        # 同步更新三轴编码角度到 3D立方体与顶部仪表栏
         if not data.get('has_hall', False):
             for hist in (self.history_h1, self.history_h2, self.history_h3):
                 hist.append(float('nan'))
@@ -3376,14 +2674,6 @@ class MainWindow(QMainWindow):
             for hist in (self.history_s1, self.history_s2, self.history_s3):
                 hist.append(float('nan'))
         if data.get('has_hall', False):
-            self.card_m1.set_hall_angle(data['h1'], online=(self.device_state or {}).get('Enc', '111')[0] == '1')
-            self.card_m2.set_hall_angle(data['h2'], online=(self.device_state or {}).get('Enc', '111')[1] == '1')
-            self.card_m3.set_hall_angle(data['h3'], online=(self.device_state or {}).get('Enc', '111')[2] == '1')
-            if (self.device_state or {}).get('EncType') == 1:
-                for axis, card in enumerate((self.card_m1, self.card_m2, self.card_m3)):
-                    ready = self.device_state.get('Enc', '000')[axis] == '1'
-                    card.lbl_hall_status.setText('[计数]' if ready else '[异常]')
-                    card.lbl_hall_status.setToolTip('F4正交计数器状态；静止与断线无法仅由A/B区分。角度相对初始化位置。')
             self.history_h1.append(data['h1'])
             self.history_h2.append(data['h2'])
             self.history_h3.append(data['h3'])
@@ -3394,7 +2684,7 @@ class MainWindow(QMainWindow):
         # 同步动量轮速度动画
         self.cube_widget.motor_speeds = [data['m1_spd'], data['m2_spd'], data['m3_spd']]
 
-        # 同步更新三轴实测闭环转速
+        # 同步更新三轴实测飞轮转速
         if data.get('has_speed', False):
             s1 = data['s1']
             s2 = data['s2']
@@ -3402,12 +2692,9 @@ class MainWindow(QMainWindow):
             self.history_s1.append(s1)
             self.history_s2.append(s2)
             self.history_s3.append(s3)
-            self.card_m1.set_actual_speed(s1)
-            self.card_m2.set_actual_speed(s2)
-            self.card_m3.set_actual_speed(s3)
-            self.card_stat_m1['val'].setText(f"{data['m1_spd']:+.1f} / {s1:+.1f} rad/s")
-            self.card_stat_m2['val'].setText(f"{data['m2_spd']:+.1f} / {s2:+.1f} rad/s")
-            self.card_stat_m3['val'].setText(f"{data['m3_spd']:+.1f} / {s3:+.1f} rad/s")
+            self.card_stat_m1['val'].setText(f"{s1:+.1f} rad/s")
+            self.card_stat_m2['val'].setText(f"{s2:+.1f} rad/s")
+            self.card_stat_m3['val'].setText(f"{s3:+.1f} rad/s")
         else:
             self.card_stat_m1['val'].setText(f"{data['m1_spd']:+.2f} rad/s")
             self.card_stat_m2['val'].setText(f"{data['m2_spd']:+.2f} rad/s")
@@ -3500,8 +2787,9 @@ class MainWindow(QMainWindow):
         if line == "OK BDIR":
             self.sync_directions = True
         if line.startswith(("OK ALIGN", "ERR ALIGN", "ERR SAFETY_TRIP")):
-            self.self_test_running = False
-            self.worker.send_cmd("STATE?")
+            # 三轴自检进行中由 on_self_test_report 驱动后续步骤，这里只刷新状态
+            if not self.self_test_running:
+                self.worker.send_cmd("STATE?")
         if line.startswith("ERR"):
             self.expected_state = {}
             self.status_bar.showMessage(line)
@@ -3524,7 +2812,6 @@ class MainWindow(QMainWindow):
         self._cancel_motion()
         self.plot_timer.stop()
         self.port_scan_timer.stop()
-        self.debounce_timer.stop()
         if self.worker.isRunning():
             self.worker.disconnect_port()
             self.worker.wait(500)
@@ -3535,9 +2822,9 @@ class MainWindow(QMainWindow):
 # 程序入口
 # =========================================================================
 def main():
-    parser = argparse.ArgumentParser(description='Cubli调试与单边平衡上位机')
+    parser = argparse.ArgumentParser(description='Cubli平衡控制上位机')
     parser.add_argument('--port',help='启动后连接的串口，如COM9')
-    parser.add_argument('--auto-m1',action='store_true',help='连接后加载已验证M1配置并启用自动检测，要求已完成对齐和IMU校准')
+    parser.add_argument('--auto-m1',action='store_true',help='连接后加载已验证M1单边配置并启用自动平衡，要求已完成三轴对齐和IMU校准')
     parser.add_argument('--state-json',type=Path,help='可选实时状态记录文件')
     args,qt_args = parser.parse_known_args()
     if args.auto_m1 and not args.port:parser.error('--auto-m1 requires --port')

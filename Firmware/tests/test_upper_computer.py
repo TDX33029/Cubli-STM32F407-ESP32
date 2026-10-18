@@ -22,18 +22,22 @@ class UpperTests(unittest.TestCase):
     def setUp(self):
         self.win = ui.MainWindow()
         self.win.worker.is_running = True
+        # 模拟已连接链路，避免未连接时点击自检按钮弹出模态提示框 (offscreen 下不可用)
+        self.win.worker.ser = type('FakeSerial', (), {'is_open': True})()
         self.win.worker._process_received_line(STATE)
     def tearDown(self):
         self.win.worker.is_running = False
         self.win.close()
     def queued(self):
         return [item[0] for item in self.win.worker.tx_queue]
-    def test_three_axis_controls(self):
-        self.assertTrue(self.win.card_m1.spin_speed.isEnabled())
-        self.assertTrue(self.win.card_m2.spin_speed.isEnabled())
-        self.assertTrue(self.win.card_m3.spin_speed.isEnabled())
-        self.assertTrue(self.win.card_m2.chk_enable.isChecked())
-        self.assertFalse(self.win.sync_group.isEnabled())
+    def test_balance_only_left_panel(self):
+        # 左侧面板仅保留平衡模式：单电机卡片/同步/闭环调试部件全部移除
+        for name in ('card_m1', 'card_m2', 'card_m3', 'sync_group', 'cl_group', 'combo_app', 'combo_debug',
+                     'combo_pid_motor', 'btn_mode_toggle', 'spin_sync'):
+            self.assertFalse(hasattr(self.win, name), name)
+        self.assertTrue(hasattr(self.win, 'card_self_test'))
+        self.assertTrue(hasattr(self.win, 'btn_three_axis_test'))
+        self.assertTrue(hasattr(self.win, 'btn_balance_start'))
     def test_all_dropdowns_ignore_wheel_including_when_focused(self):
         combos=self.win.findChildren(ui.QComboBox)
         self.assertGreaterEqual(len(combos),10)
@@ -48,22 +52,60 @@ class UpperTests(unittest.TestCase):
                 app.sendEvent(combo,event)
                 self.assertEqual(combo.currentIndex(),0)
                 self.assertEqual(self.queued(),[])
-        self.win.combo_app.setCurrentIndex(1)
-        self.win.combo_app.activated.emit(1)
-        self.assertEqual(self.queued(),['APP 1'])
-    def test_edge_preparation_available_from_boot_without_mode_switch(self):
+        self.win.combo_balance.setCurrentIndex(3)
+        self.win.combo_balance.activated.emit(3)
+        self.assertEqual(self.queued(),['BMODE 4'])
+    def test_three_axis_self_test_from_boot_without_mode_switch(self):
         initial=AUTO_STATE.replace('App:1','App:0').replace('Cal:1','Cal:0').replace('Aligned:100','Aligned:000').replace('Ref:1','Ref:0').replace('AxesOK:1','AxesOK:0').replace('DirOK:1','DirOK:0')
         self.win.worker._process_received_line(initial)
         self.assertFalse(self.win.auto_edge_group.isHidden())
-        self.assertTrue(self.win.btn_edge_m1_test.isEnabled())
+        self.assertTrue(self.win.btn_three_axis_test.isEnabled())
+        self.assertTrue(self.win.card_self_test.btn_run_test.isEnabled())
         self.assertTrue(self.win.btn_edge_imu_cal.isEnabled())
         self.assertFalse(self.win.btn_edge_profile.isEnabled())
         self.assertFalse(self.win.btn_auto_edge.isEnabled())
-        self.assertIn('M1硬件自检',self.win.lbl_edge_setup.text())
-        self.win.btn_edge_m1_test.click()
-        self.assertEqual(self.queued(),['APP 0','DBG 1','TEST 1'])
+        self.assertIn('三轴自检',self.win.lbl_edge_setup.text())
+        self.win.btn_three_axis_test.click()
+        self.assertEqual(self.queued(),['APP 0','TEST 1'])
         self.assertTrue(self.win.self_test_running)
         self.assertNotIn('TEST 2',self.queued())
+    def test_three_axis_self_test_sequence_and_merge(self):
+        self.win.worker._process_received_line(AUTO_STATE.replace('Aligned:100','Aligned:000'))
+        self.win.card_self_test.btn_run_test.click()
+        self.assertEqual(self.queued(),['APP 0','TEST 1'])
+        self.win.worker.clear_pending()
+        self.win.worker._process_received_line('$TEST_REPORT,M1:PASS:100:432.1,M2:SKIP:0:0.0,M3:SKIP:0:0.0,ALL:PASS#')
+        self.assertEqual(self.queued(),['TEST 2'])
+        self.assertTrue(self.win.self_test_running)
+        self.win.worker.clear_pending()
+        self.win.worker._process_received_line('$TEST_REPORT,M1:SKIP:0:0.0,M2:PASS:100:428.9,M3:SKIP:0:0.0,ALL:PASS#')
+        self.assertEqual(self.queued(),['TEST 3'])
+        self.win.worker.clear_pending()
+        self.win.worker._process_received_line('$TEST_REPORT,M1:SKIP:0:0.0,M2:SKIP:0:0.0,M3:PASS:100:435.0,ALL:PASS#')
+        self.assertEqual(self.queued(),['STATE?'])
+        self.assertFalse(self.win.self_test_running)
+        self.assertTrue(self.win.self_test_passed)
+        self.assertEqual(self.win.card_self_test.lbl_badge.text(),'自检通过 (已解锁)')
+        self.assertEqual(self.win.card_self_test.lbl_m_tags[2].text(),'正常')
+    def test_three_axis_self_test_failure_keeps_lock(self):
+        self.win.worker._process_received_line(AUTO_STATE.replace('Aligned:100','Aligned:000'))
+        self.win.btn_three_axis_test.click()
+        for report in ('$TEST_REPORT,M1:PASS:100:432.1,M2:SKIP:0:0.0,M3:SKIP:0:0.0,ALL:PASS#',
+                       '$TEST_REPORT,M1:SKIP:0:0.0,M2:FAIL_MAP:10:3.0,M3:SKIP:0:0.0,ALL:FAIL#',
+                       '$TEST_REPORT,M1:SKIP:0:0.0,M2:SKIP:0:0.0,M3:PASS:100:435.0,ALL:PASS#'):
+            self.win.worker._process_received_line(report)
+        self.assertFalse(self.win.self_test_running)
+        self.assertFalse(self.win.self_test_passed)
+        self.assertEqual(self.win.card_self_test.lbl_m_tags[1].text(),'映射检测失败')
+        self.assertIn('锁定',self.win.card_self_test.lbl_badge.text())
+    def test_emergency_stop_cancels_running_self_test(self):
+        self.win.worker._process_received_line(AUTO_STATE.replace('Aligned:100','Aligned:000'))
+        self.win.btn_three_axis_test.click()
+        self.assertTrue(self.win.self_test_running)
+        self.win.action_emergency_stop()
+        self.assertFalse(self.win.self_test_running)
+        self.assertEqual(self.win.self_test_queue,[])
+        self.assertEqual(self.queued(),['STOP'])
     def test_connected_port_is_reflected_without_selection_commands(self):
         self.win.combo_ports.addItem('测试串口','COM_TEST')
         self.win.on_serial_connected('COM_TEST',115200)
@@ -81,23 +123,19 @@ class UpperTests(unittest.TestCase):
         self.assertIn('加载已验证',self.win.lbl_edge_setup.text())
         self.win.worker._process_received_line(AUTO_STATE)
         self.assertTrue(self.win.btn_auto_edge.isEnabled())
-    def test_independent_unlock_and_batch_changed_axes(self):
-        self.win.worker._process_received_line(STATE.replace('Aligned:111','Aligned:101'))
-        self.assertTrue(self.win.card_m1.spin_speed.isEnabled())
-        self.assertFalse(self.win.card_m2.spin_speed.isEnabled())
-        self.assertTrue(self.win.card_m3.spin_speed.isEnabled())
-        self.win.on_motor_speed_change(1, 20)
-        self.win.on_motor_speed_change(3, -30)
-        self.win._flush_speed_command()
-        self.assertEqual(self.queued(), ['M1 20.00','M3 -30.00'])
-        self.assertEqual(self.win.debounce_timer.interval(),20)
-        self.assertEqual(self.win.plot_timer.interval(),100)
+    def test_axis_map_label_from_state(self):
+        state=STATE.replace('#',',Map1:3,Map2:1,Map3:2,PP1:7,PP2:14,PP3:7,Dir1:1,Dir2:-1,Dir3:1#')
+        self.win.worker._process_received_line(state)
+        text=self.win.card_self_test.lbl_maps.text()
+        self.assertIn('M1→ENC3(PP7)',text)
+        self.assertIn('M2→ENC1(PP14)',text)
+        self.assertIn('M3→ENC2(PP7)',text)
     def test_reference_required_and_mapping_visible(self):
         state=STATE.replace('App:0','App:1').replace('#', ',Ref:0,Map1:3,Map2:1,Map3:2,PP1:7,PP2:14,PP3:7,Dir1:1,Dir2:-1,Dir3:1#')
         self.win.worker._process_received_line(state)
         self.assertFalse(self.win.btn_balance_start.isEnabled())
-        self.assertIn('ENC1', self.win.card_m2.title())
-        self.assertIn('PP14', self.win.card_m2.title())
+        self.assertIn('ENC1', self.win.card_self_test.lbl_maps.text())
+        self.assertIn('PP14', self.win.card_self_test.lbl_maps.text())
         self.win.worker._process_received_line(state.replace('Ref:0','Ref:1'))
         self.assertTrue(self.win.btn_balance_start.isEnabled())
     def test_auto_edge_start_stop_and_protection_status(self):
@@ -275,15 +313,11 @@ class UpperTests(unittest.TestCase):
         self.win.worker._process_received_line(state.replace('Bal:0','Bal:6'))
         self.assertEqual(self.win.device_state['Bal'],6)
         self.assertIn('等待扶到',self.win.lbl_balance.text())
-    def test_mode_change_cancels_pending_speed(self):
-        self.win.on_motor_speed_change(2, 10)
-        self.win._request_state_change('APP 1', {'App': 1})
-        self.win._flush_speed_command()
-        self.assertEqual(self.queued(), ['APP 1'])
-        self.assertFalse(self.win.debounce_timer.isActive())
-        self.win.worker._process_received_line(STATE.replace('App:0','App:1').replace('EN:010','EN:000'))
-        self.assertFalse(self.win.card_m2.spin_speed.isEnabled())
+    def test_balance_start_switches_to_work_mode(self):
+        self.win.worker._process_received_line(AUTO_STATE.replace('App:1','App:0'))
         self.assertTrue(self.win.btn_balance_start.isEnabled())
+        self.win.btn_balance_start.click()
+        self.assertEqual(self.queued(),['APP 1','BAL 1'])
     def test_configurable_trip_angle(self):
         state=STATE.replace('App:0','App:1').replace('#',',TripDeg:20.0#')
         self.win.worker._process_received_line(state)
@@ -297,31 +331,12 @@ class UpperTests(unittest.TestCase):
         self.assertEqual(self.queued(),['BAL 0','BTRIP 60.0'])
         self.win.worker._process_received_line(state.replace('Bal:0','Bal:5'))
         self.assertFalse(self.win.btn_trip_angle.isEnabled())
-    def test_stop_discards_queued_speed(self):
-        self.win.worker.send_cmd('M2 20')
-        self.win.on_motor_speed_change(2, 12)
-        self.win.action_emergency_stop()
-        self.win._flush_speed_command()
-        self.assertEqual(self.queued(), ['STOP'])
-        self.assertFalse(self.win.pending_flag)
-    def test_balance_wheel_limit_readback_above_debug_speed_range(self):
+    def test_balance_wheel_limit_readback(self):
         self.win.device_state=None
         state=STATE.replace('App:0','App:1').replace('EN:010','EN:000').replace('#',',VLimit:6.0,SLimit:330.0#')
         self.win.worker._process_received_line(state)
         self.assertEqual(self.win.spin_vlim.value(),330)
-        self.assertEqual(self.win.card_m1.spin_speed.maximum(),180)
-    def test_speed_only_selected_axis(self):
-        self.win.on_motor_speed_change(2, -3)
-        self.win._flush_speed_command()
-        self.assertEqual(self.queued(), ['M2 -3.00'])
-    def test_speed_mode_button_uses_ack_state(self):
-        self.win.action_toggle_control_mode()
-        self.assertEqual(self.queued(), ['MODE 1'])
-        self.assertEqual(self.win.speed_mode, 0)
-        self.win.worker._process_received_line('OK MODE:1')
-        self.win.worker.clear_pending()
-        self.win.action_toggle_control_mode()
-        self.assertEqual(self.queued(), ['MODE 0'])
+        self.assertGreaterEqual(self.win.spin_vlim.maximum(),360)
     def test_corner_requires_all_axes(self):
         state = STATE.replace('App:0','App:1').replace('BMode:1','BMode:4').replace('Aligned:111','Aligned:110')
         self.win.worker._process_received_line(state)
@@ -362,9 +377,6 @@ class UpperTests(unittest.TestCase):
         self.assertEqual(self.win.device_state['EncType'], 1)
         self.assertEqual(self.win.device_state['C2'], 4000)
         self.assertIn('4096/4000/2048', self.win.lbl_balance.text())
-        tele='$TELE,M1:0,M2:0,M3:0,Vq:5,EN:000,A1:0,A2:0,A3:0,H1:1,H2:2,H3:3#'
-        self.win.worker._process_received_line(tele)
-        self.assertEqual(self.win.card_m1.lbl_hall_status.text(), '[计数]')
     def test_invalid_state_is_ignored(self):
         before = self.win.device_state.copy()
         for bad in (STATE.replace('Dbg:2', 'Dbg:9'), STATE.replace('Tilt:0.12', 'Tilt:nan'), STATE.replace('Cal:1', 'Cal:3')):
