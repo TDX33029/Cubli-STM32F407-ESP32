@@ -30,7 +30,7 @@ def tilt(left, right):
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--port', default='COM7')
 parser.add_argument('--tag', required=True)
-parser.add_argument('--seconds', type=float, default=3)
+parser.add_argument('--seconds', type=float, default=3, help='Bounded observation, up to120s; all live guards retained')
 parser.add_argument('--wait-seconds', type=float, default=180, help='Disabled entry wait, 10..600 seconds')
 parser.add_argument('--countdown', type=int, default=2)
 parser.add_argument('--capture-angle', type=float, default=.5, help='Total entry tilt in degrees, 0.5..3')
@@ -60,7 +60,7 @@ parser.add_argument('--probe-voltage', type=float, default=3)
 parser.add_argument('--probe-ms', type=int, default=80)
 parser.add_argument('--probe-delay', type=float, default=.35, help='Zero-output release interval before timed probe, .1.. .35s')
 args = parser.parse_args()
-if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
+if not (0 < args.seconds <= 120 and 10 <= args.wait_seconds <= 600 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
         and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
         and 1.5 <= args.body_rate_bound <= 2
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)

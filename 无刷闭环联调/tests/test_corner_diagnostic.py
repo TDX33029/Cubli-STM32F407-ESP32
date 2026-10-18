@@ -172,7 +172,7 @@ class Device:
 
 class CornerDiagnosticTests(unittest.TestCase):
     def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False,
-                  probe_motor=1, probe_delay=.35, tau=None, rate_bound=1.5, neutral_limit=2, previous=None, resume=False, seed=False, mutate=None):
+                  probe_motor=1, probe_delay=.35, tau=None, rate_bound=1.5, neutral_limit=2, previous=None, resume=False, seed=False, mutate=None, seconds=3):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -183,7 +183,7 @@ class CornerDiagnosticTests(unittest.TestCase):
             pose.write_text(json.dumps({'ranges': {'Pit': {'median': 23.56}, 'Rol': {'median': 46.79}}}))
             argv = [str(SCRIPT), '--tag', 'sim', '--output-dir', directory,
                     '--expected-pose', str(pose), '--body-axes', '2', '3', '1',
-                    '--directions', '-1', '-1', '-1','--body-rate-bound',str(rate_bound)] + (['--prepare-only'] if prepare else [])
+                    '--directions', '-1', '-1', '-1','--body-rate-bound',str(rate_bound),'--seconds',str(seconds)] + (['--prepare-only'] if prepare else [])
             if saved:
                 argv += ['--reference-gravity', '-.668', '.4', '.627']
             if yaw is not None:
@@ -229,6 +229,16 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('BNEUTRAL 0', device.commands)
         self.assertFalse(any(c.startswith('BNEUTRAL 1') for c in device.commands))
+
+    def test_extended_observation_stops_on_time_and_retains_guards(self):
+        device,result,code=self.run_trial(seconds=60)
+        self.assertEqual(code,0)
+        self.assertGreaterEqual(result['run_duration_s'],60)
+        self.assertEqual(device.state['EN'],'000')
+        device,result,code=self.run_trial(seconds=60,fault='wheel_guard')
+        self.assertEqual(code,2)
+        self.assertEqual(float(result['guard_frame']['S2']),400)
+        self.assertEqual(device.state['EN'],'000')
 
     def test_explicit_body_rate_bound_allows_rate_below_two(self):
         _,result,code=self.run_trial(fault='gyro',rate_bound=2)

@@ -17,5 +17,5 @@
     "Cubli-ST/Core/Src/main.c": "e54cc950fa5c4de75b96692e208bba17ec61b070bfd1084069e13f490d7c28f0",
     "Cubli-ST/Core/Src/usart.c": "2a85914b0138809ee45a4287ca2e81e900c7764df3831e505ae8ac73b3b1da9c"
   },
-  "balance_validation": "WPlane1 neutral5_plane_trial8s_03 completed8.000s timed stop, no protection; effective tilt max1.268deg; peak wheel47.80rad/s, final EN000.15s continuation pending; long-term stability not yet validated."
+  "balance_validation": "WPlane1:8s and15s timed observation completed, effective tilt maxima1.268/1.421deg, peak wheel47.80/88.28rad/s, no protection, EN000 confirmed.60s continuation pending."
 }
