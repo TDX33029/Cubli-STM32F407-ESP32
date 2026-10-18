@@ -17,3 +17,5 @@ Cubli STM32F407ZGT6 Changelog
 [260923]Power protection scheme verified, pending validation of RC battery charging function, planning to add ESP32-WROOM for wireless debugging, iterated version to Version 1.4
 
 [261007]Version1.4 completed，fixed some previous issues
+
+[261018]Unprecedented single-point balance has been achieved, ready to switch to the wireless serial port
