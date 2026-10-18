@@ -3,7 +3,7 @@
 <title>Static Call Graph - [CubeMX\CubeMX.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image CubeMX\CubeMX.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Sun Oct 18 20:13:06 2026
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Sun Oct 18 20:23:40 2026
 <BR><P>
 <H3>Maximum Stack Usage =        872 bytes + Unknown(Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -391,10 +391,10 @@ Global Symbols
 <BR>[Calls]<UL><LI><a href="#[66]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_llsr
 <LI><a href="#[67]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_llsl
 </UL>
-<BR>[Called By]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_SetConfig
-<LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_GetSysClockFreq
+<BR>[Called By]<UL><LI><a href="#[b8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_RCC_GetSysClockFreq
 <LI><a href="#[129]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_printf_core
 <LI><a href="#[13e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_fp_digits
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_SetConfig
 </UL>
 
 <P><STRONG><a name="[124]"></a>toupper</STRONG> (Thumb, 12 bytes, Stack size 0 bytes, toupper.o(.text))
@@ -435,8 +435,8 @@ Global Symbols
 <LI><a href="#[103]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MPU6050_Init
 <LI><a href="#[de]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_Balance_Init
 <LI><a href="#[11e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SystemClock_Config
-<LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI2_Init
 <LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_MspInit
+<LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI2_Init
 </UL>
 
 <P><STRONG><a name="[16e]"></a>__aeabi_memclr8</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, memseta.o(.text), UNUSED)
@@ -571,8 +571,8 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[139]"></a>__ARM_fcmp4</STRONG> (Thumb, 54 bytes, Stack size 0 bytes, fcmp4.o(.text))
-<BR><BR>[Called By]<UL><LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fmaxf
-<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
+<BR><BR>[Called By]<UL><LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
+<LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fmaxf
 </UL>
 
 <P><STRONG><a name="[173]"></a>_fcmp4</STRONG> (Thumb, 0 bytes, Stack size 0 bytes, fcmp4.o(.text), UNUSED)
@@ -713,8 +713,8 @@ Global Symbols
 <LI><a href="#[9e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_motor_enable
 <LI><a href="#[144]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;commander_run
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_SafetyTick
-<LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;setPhaseVoltage
 <LI><a href="#[123]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_Link_IRQHandler
+<LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;setPhaseVoltage
 </UL>
 
 <P><STRONG><a name="[8f]"></a>Control_SafetyTick</STRONG> (Thumb, 182 bytes, Stack size 16 bytes, main.o(i.Control_SafetyTick))
@@ -727,7 +727,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[40]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;TIM6_DAC_IRQHandler
 </UL>
 
-<P><STRONG><a name="[91]"></a>Control_Status</STRONG> (Thumb, 1652 bytes, Stack size 24 bytes, main.o(i.Control_Status))
+<P><STRONG><a name="[91]"></a>Control_Status</STRONG> (Thumb, 1660 bytes, Stack size 24 bytes, main.o(i.Control_Status))
 <BR><BR>[Stack]<UL><LI>Max Depth = 96<LI>Call Chain = Control_Status &rArr; report_float &rArr; UART_WriteFixed &rArr; UART_WriteUInt &rArr; fputc
 </UL>
 <BR>[Calls]<UL><LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART_TxFree
@@ -820,8 +820,8 @@ Global Symbols
 <LI><a href="#[114]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Motor_GPIO_Safety_Check
 <LI><a href="#[107]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MX_GPIO_Init
 <LI><a href="#[103]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MPU6050_Init
-<LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI2_Init
 <LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_MspInit
+<LI><a href="#[fc]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;SPI2_Init
 </UL>
 
 <P><STRONG><a name="[155]"></a>HAL_GPIO_ReadPin</STRONG> (Thumb, 10 bytes, Stack size 0 bytes, stm32f4xx_hal_gpio.o(i.HAL_GPIO_ReadPin), UNUSED)
@@ -861,14 +861,14 @@ Global Symbols
 <LI><a href="#[8f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_SafetyTick
 <LI><a href="#[8d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Heartbeat
 <LI><a href="#[147]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;control_reset_latch
-<LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;protect_balance
-<LI><a href="#[e1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;neutral_update
-<LI><a href="#[116]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;detect_motor_encoder
 <LI><a href="#[d1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C_WaitOnTXEFlagUntilTimeout
 <LI><a href="#[ad]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C_WaitOnRXNEFlagUntilTimeout
 <LI><a href="#[d0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C_WaitOnMasterAddressFlagUntilTimeout
 <LI><a href="#[ab]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C_WaitOnFlagUntilTimeout
 <LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_Abort
+<LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;protect_balance
+<LI><a href="#[e1]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;neutral_update
+<LI><a href="#[116]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;detect_motor_encoder
 </UL>
 
 <P><STRONG><a name="[a7]"></a>HAL_I2C_Init</STRONG> (Thumb, 376 bytes, Stack size 16 bytes, stm32f4xx_hal_i2c.o(i.HAL_I2C_Init))
@@ -1066,25 +1066,25 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[ca]"></a>HAL_UARTEx_RxEventCallback</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32f4xx_hal_uart.o(i.HAL_UARTEx_RxEventCallback))
-<BR><BR>[Called By]<UL><LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Receive_IT
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
+<BR><BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
+<LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Receive_IT
 </UL>
 
 <P><STRONG><a name="[c9]"></a>HAL_UART_ErrorCallback</STRONG> (Thumb, 2 bytes, Stack size 0 bytes, stm32f4xx_hal_uart.o(i.HAL_UART_ErrorCallback))
-<BR><BR>[Called By]<UL><LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_DMAAbortOnError
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
+<BR><BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
+<LI><a href="#[61]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_DMAAbortOnError
 </UL>
 
 <P><STRONG><a name="[c5]"></a>HAL_UART_IRQHandler</STRONG> (Thumb, 636 bytes, Stack size 24 bytes, stm32f4xx_hal_uart.o(i.HAL_UART_IRQHandler))
 <BR><BR>[Stack]<UL><LI>Max Depth = 48<LI>Call Chain = HAL_UART_IRQHandler &rArr; HAL_DMA_Abort
 </UL>
-<BR>[Calls]<UL><LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_TxCpltCallback
+<BR>[Calls]<UL><LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_Abort_IT
+<LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_Abort
+<LI><a href="#[cb]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_TxCpltCallback
 <LI><a href="#[c9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_ErrorCallback
 <LI><a href="#[ca]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UARTEx_RxEventCallback
 <LI><a href="#[c6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_Receive_IT
 <LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_EndRxTransfer
-<LI><a href="#[c8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_Abort_IT
-<LI><a href="#[a6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_DMA_Abort
 </UL>
 <BR>[Called By]<UL><LI><a href="#[30]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART2_IRQHandler
 <LI><a href="#[2f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;USART1_IRQHandler
@@ -1093,8 +1093,8 @@ Global Symbols
 <P><STRONG><a name="[cc]"></a>HAL_UART_Init</STRONG> (Thumb, 100 bytes, Stack size 16 bytes, stm32f4xx_hal_uart.o(i.HAL_UART_Init))
 <BR><BR>[Stack]<UL><LI>Max Depth = 104<LI>Call Chain = HAL_UART_Init &rArr; HAL_UART_MspInit &rArr; HAL_GPIO_Init
 </UL>
-<BR>[Calls]<UL><LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_SetConfig
-<LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_MspInit
+<BR>[Calls]<UL><LI><a href="#[cd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_MspInit
+<LI><a href="#[ce]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_SetConfig
 </UL>
 <BR>[Called By]<UL><LI><a href="#[113]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MX_USART2_UART_Init
 <LI><a href="#[112]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MX_USART1_UART_Init
@@ -1134,26 +1134,26 @@ Global Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 104<LI>Call Chain = LQR_Attitude_Update &rArr; __hardfp_atan2f
 </UL>
 <BR>[Calls]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
+<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 <LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sqrtf
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_atan2f
 <LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;norm3
 <LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cross3
 <LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__ARM_isfinitef
-<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
 <P><STRONG><a name="[97]"></a>LQR_AutoPoseReady</STRONG> (Thumb, 244 bytes, Stack size 24 bytes, lqr_balance.o(i.LQR_AutoPoseReady))
-<BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = LQR_AutoPoseReady &rArr; norm3 &rArr; __hardfp_sqrtf
+<BR><BR>[Stack]<UL><LI>Max Depth = 40<LI>Call Chain = LQR_AutoPoseReady &rArr; __hardfp_fminf
 </UL>
 <BR>[Calls]<UL><LI><a href="#[9b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_DirectionsConfirmed
 <LI><a href="#[9a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_AxesConfirmed
 <LI><a href="#[96]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_AutoRetryRemainingMs
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Aborted
-<LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;norm3
 <LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
+<LI><a href="#[d5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;norm3
 </UL>
 <BR>[Called By]<UL><LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_Balance_Loop
 <LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Status
@@ -1214,8 +1214,8 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[5b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
 
-<P><STRONG><a name="[e0]"></a>LQR_Balance_Loop</STRONG> (Thumb, 2262 bytes, Stack size 96 bytes, lqr_balance.o(i.LQR_Balance_Loop))
-<BR><BR>[Stack]<UL><LI>Max Depth = 280<LI>Call Chain = LQR_Balance_Loop &rArr; LQR_Balance_Enable &rArr; clear_output &rArr; set_motor_enable &rArr; updateSensor &rArr; LPF_operator
+<P><STRONG><a name="[e0]"></a>LQR_Balance_Loop</STRONG> (Thumb, 2386 bytes, Stack size 104 bytes, lqr_balance.o(i.LQR_Balance_Loop))
+<BR><BR>[Stack]<UL><LI>Max Depth = 288<LI>Call Chain = LQR_Balance_Loop &rArr; LQR_Balance_Enable &rArr; clear_output &rArr; set_motor_enable &rArr; updateSensor &rArr; LPF_operator
 </UL>
 <BR>[Calls]<UL><LI><a href="#[85]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;micros
 <LI><a href="#[e5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_GetGains
@@ -1225,6 +1225,7 @@ Global Symbols
 <LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
 <LI><a href="#[9e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_motor_enable
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Aborted
+<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_atan2f
 <LI><a href="#[e3]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_Trip
 <LI><a href="#[e6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;protect_balance
@@ -1234,7 +1235,6 @@ Global Symbols
 <LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cross3
 <LI><a href="#[e4]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;corner_wheels_idle
 <LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__ARM_isfinitef
-<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -1521,9 +1521,9 @@ Global Symbols
 </UL>
 <BR>[Calls]<UL><LI><a href="#[af]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GPIO_Init
 <LI><a href="#[fd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;delay_ms
+<LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 <LI><a href="#[104]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mpu_write_reg
 <LI><a href="#[105]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;mpu_read_regs
-<LI><a href="#[ae]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memclr4
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 <LI><a href="#[144]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;commander_run
@@ -1664,6 +1664,8 @@ Global Symbols
 <LI><a href="#[119]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_f2d
 <LI><a href="#[9e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_motor_enable
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Aborted
+<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
+<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 <LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fmaxf
 <LI><a href="#[ed]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_InvalidateMotorCalibration
 <LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;setPhaseVoltage
@@ -1671,8 +1673,6 @@ Global Symbols
 <LI><a href="#[117]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;align_wait_still
 <LI><a href="#[118]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;shaftAngle
 <LI><a href="#[11a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_normalizeAngle
-<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
-<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[144]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;commander_run
 </UL>
@@ -1913,10 +1913,10 @@ Global Symbols
 <P><STRONG><a name="[17a]"></a>printf</STRONG> (Thumb, 0 bytes, Stack size 24 bytes, printfa.o(i.__0printf), UNUSED)
 
 <P><STRONG><a name="[130]"></a>__ARM_fpclassifyf</STRONG> (Thumb, 38 bytes, Stack size 0 bytes, fpclassifyf.o(i.__ARM_fpclassifyf))
-<BR><BR>[Called By]<UL><LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_tanhf
+<BR><BR>[Called By]<UL><LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
+<LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_tanhf
 <LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_atan2f
-<LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
 </UL>
 
 <P><STRONG><a name="[12a]"></a>__hardfp___mathlib_tofloat</STRONG> (Thumb, 232 bytes, Stack size 32 bytes, narrow.o(i.__hardfp___mathlib_tofloat))
@@ -2002,9 +2002,9 @@ Global Symbols
 <P><STRONG><a name="[13a]"></a>__hardfp_fmodf</STRONG> (Thumb, 176 bytes, Stack size 16 bytes, fmodf.o(i.__hardfp_fmodf))
 <BR><BR>[Stack]<UL><LI>Max Depth = 36<LI>Call Chain = __hardfp_fmodf &rArr; _frem &rArr; _float_epilogue
 </UL>
-<BR>[Calls]<UL><LI><a href="#[6e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_frem
-<LI><a href="#[12e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__set_errno
+<BR>[Calls]<UL><LI><a href="#[12e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__set_errno
 <LI><a href="#[135]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__mathlib_flt_invalid
+<LI><a href="#[6e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_frem
 </UL>
 <BR>[Called By]<UL><LI><a href="#[11a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;_normalizeAngle
 </UL>
@@ -2056,10 +2056,10 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[136]"></a>__mathlib_flt_infnan</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, funder.o(i.__mathlib_flt_infnan))
-<BR><BR>[Called By]<UL><LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_tanhf
+<BR><BR>[Called By]<UL><LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
+<LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_tanhf
 <LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
 <LI><a href="#[133]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_cosf
-<LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
 </UL>
 
 <P><STRONG><a name="[132]"></a>__mathlib_flt_infnan2</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, funder.o(i.__mathlib_flt_infnan2))
@@ -2077,10 +2077,10 @@ Global Symbols
 </UL>
 
 <P><STRONG><a name="[131]"></a>__mathlib_flt_underflow</STRONG> (Thumb, 10 bytes, Stack size 0 bytes, funder.o(i.__mathlib_flt_underflow))
-<BR><BR>[Called By]<UL><LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_tanhf
+<BR><BR>[Called By]<UL><LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
+<LI><a href="#[13d]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_tanhf
 <LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_atan2f
-<LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
 </UL>
 
 <P><STRONG><a name="[6d]"></a>__mathlib_narrow</STRONG> (Thumb, 18 bytes, Stack size 8 bytes, narrow.o(i.__mathlib_narrow))
@@ -2105,13 +2105,13 @@ Global Symbols
 <P><STRONG><a name="[17e]"></a>__scatterload_zeroinit</STRONG> (Thumb, 14 bytes, Stack size unknown bytes, handlers.o(i.__scatterload_zeroinit), UNUSED)
 
 <P><STRONG><a name="[12e]"></a>__set_errno</STRONG> (Thumb, 6 bytes, Stack size 0 bytes, errno.o(i.__set_errno))
-<BR><BR>[Called By]<UL><LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sqrtf
+<BR><BR>[Called By]<UL><LI><a href="#[12a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp___mathlib_tofloat
+<LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
+<LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sqrtf
 <LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
 <LI><a href="#[13a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fmodf
 <LI><a href="#[133]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_cosf
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_atan2f
-<LI><a href="#[12a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp___mathlib_tofloat
-<LI><a href="#[137]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_expf
 </UL>
 
 <P><STRONG><a name="[143]"></a>_electricalAngle</STRONG> (Thumb, 14 bytes, Stack size 0 bytes, foc_utils.o(i._electricalAngle))
@@ -2185,16 +2185,16 @@ Global Symbols
 <LI><a href="#[90]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_RequestStop
 <LI><a href="#[89]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;report_int
 <LI><a href="#[147]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;control_reset_latch
-<LI><a href="#[13c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_strtof
-<LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sqrtf
-<LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
-<LI><a href="#[133]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_cosf
 <LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
 <LI><a href="#[145]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strtok
 <LI><a href="#[14a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strncmp
 <LI><a href="#[125]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strcmp
 <LI><a href="#[149]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;strlen
 <LI><a href="#[124]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;toupper
+<LI><a href="#[13c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_strtof
+<LI><a href="#[88]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sqrtf
+<LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
+<LI><a href="#[133]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_cosf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[5b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;main
 </UL>
@@ -2653,8 +2653,8 @@ Local Symbols
 <P><STRONG><a name="[c7]"></a>UART_EndRxTransfer</STRONG> (Thumb, 78 bytes, Stack size 0 bytes, stm32f4xx_hal_uart.o(i.UART_EndRxTransfer))
 <BR><BR>[Calls]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_EndRxTransfer
 </UL>
-<BR>[Called By]<UL><LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_EndRxTransfer
-<LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
+<BR>[Called By]<UL><LI><a href="#[c5]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_UART_IRQHandler
+<LI><a href="#[c7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;UART_EndRxTransfer
 </UL>
 
 <P><STRONG><a name="[c6]"></a>UART_Receive_IT</STRONG> (Thumb, 194 bytes, Stack size 8 bytes, stm32f4xx_hal_uart.o(i.UART_Receive_IT))
@@ -2686,9 +2686,9 @@ Local Symbols
 <BR>[Calls]<UL><LI><a href="#[dd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;updateSensor
 <LI><a href="#[fd]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;delay_ms
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Aborted
+<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 <LI><a href="#[98]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fmaxf
 <LI><a href="#[118]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;shaftAngle
-<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[115]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Motor_alignSensor
 </UL>
@@ -2704,11 +2704,11 @@ Local Symbols
 <LI><a href="#[14f]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ENC_GetAngle
 <LI><a href="#[9e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;set_motor_enable
 <LI><a href="#[da]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Control_Aborted
+<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
+<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 <LI><a href="#[151]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;velocityOpenloop
 <LI><a href="#[f0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;setPhaseVoltage
 <LI><a href="#[152]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;reset_sensor_tracking
-<LI><a href="#[d8]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__2printf
-<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[115]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;Motor_alignSensor
 </UL>
@@ -2836,6 +2836,7 @@ Local Symbols
 <BR><BR>[Stack]<UL><LI>Max Depth = 148<LI>Call Chain = neutral_update &rArr; __hardfp_sinf &rArr; __mathlib_rredf2
 </UL>
 <BR>[Calls]<UL><LI><a href="#[8e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;HAL_GetTick
+<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 <LI><a href="#[13b]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_sinf
 <LI><a href="#[133]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_cosf
 <LI><a href="#[8c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_atan2f
@@ -2843,7 +2844,6 @@ Local Symbols
 <LI><a href="#[e2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;dot3
 <LI><a href="#[d7]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;cross3
 <LI><a href="#[d6]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__ARM_isfinitef
-<LI><a href="#[d9]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__hardfp_fminf
 </UL>
 <BR>[Called By]<UL><LI><a href="#[e0]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;LQR_Balance_Loop
 </UL>

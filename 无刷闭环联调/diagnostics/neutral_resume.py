@@ -55,6 +55,8 @@ def matches_saved_state(current, previous):
     old=previous['last_state']
     if current.get('EN')!='000' or current.get('Bal')!='0' or current.get('Fault')!='0':
         return False
+    if current.get('WPlane') != old.get('WPlane'):
+        return False
     if any(current.get(key)!=old.get(key) for key in STATE_KEYS):
         return False
     try:

@@ -316,7 +316,7 @@ class CornerDiagnosticTests(unittest.TestCase):
 
     def test_resume_changed_device_or_settings_never_arms(self):
         _,previous,_=self.run_trial(saved=True,neutral=True)
-        for change in ({'Cal':'0'},{'NPit':'24.8'},{'Map1':'2'},{'NTune':'3'}):
+        for change in ({'Cal':'0'},{'NPit':'24.8'},{'Map1':'2'},{'NTune':'3'},{'WPlane':'1'}):
             device,result,code=self.run_trial(saved=True,neutral=True,previous=previous,resume=True,mutate=change)
             self.assertEqual(code,2)
             self.assertNotIn('BSTART 2',device.commands)

@@ -1,21 +1,21 @@
 {
   "date_local": "2026-10-18",
   "encoder": "I2C absolute",
-  "change": "NTune3: configurable2..5deg total original-base cone and disabled learned-reference seed; legacy2deg defaults retained.",
-  "hex_sha256": "d65fca81c96584df2b3e498d7d457833c68d523d1c2454dce4e6b69e2e0f51bd",
-  "hex_data_bytes": 53244,
+  "change": "NTune3 with WPlane1: project corner weighted wheel feedback onto tilt plane, retain BYAW and edge controller; configurable2..5deg neutral search and learned target restoration.",
+  "hex_sha256": "347585feec8ead64fa2c10b319b94ef9b7b21698b0e068321af12d70e3d8b259",
+  "hex_data_bytes": 53396,
   "build_inputs": 38,
   "armcc_errors": 0,
   "armcc_warnings": 0,
   "flashed": true,
   "flash_verification": "Download verified successfully; reset performed",
-  "flash_log": "flash_neutral5_verified_2026-10-18.log",
-  "postflash_alignment_and_calibration": "neutral5_startup_prep01: Aligned111 Cal1 IMU1 EN000 Fault0 Enc111; map3/1/2,7PP,sensor directions+1",
+  "flash_log": "flash_neutral5_plane_verified_2026-10-18.log",
+  "postflash_alignment_and_calibration": "neutral5_plane_startup_prep01: Aligned111 Cal1 IMU1 EN000 Fault0 Enc111; map3/1/2,7PP,sensor directions+1",
   "source_hashes": {
-    "Cubli-ST/Hardware/lqr_balance.c": "4e2f96ed7178f25a31c169758ef6f5e6d19bc731d6a89dc8e1126384f13632c4",
+    "Cubli-ST/Hardware/lqr_balance.c": "1e07c650e69906782a54fb04313f3cb54ce42ba9092f115af2dc93d02d71df9c",
     "Cubli-ST/Hardware/lqr_balance.h": "2f2d4eaba64c3af1554332dd18eaf7fd018d172392901c2de7ebffa339c114c6",
-    "Cubli-ST/Core/Src/main.c": "eff3fbce371f97cf74e8f774bd9855bd21c13acfa113c1aedac7ef1f2f012bd3",
+    "Cubli-ST/Core/Src/main.c": "e54cc950fa5c4de75b96692e208bba17ec61b070bfd1084069e13f490d7c28f0",
     "Cubli-ST/Core/Src/usart.c": "2a85914b0138809ee45a4287ca2e81e900c7764df3831e505ae8ac73b3b1da9c"
   },
-  "balance_validation": "neutral5_seed_trial8s_01:7.110s body-rate2.098 stop, NOff1.060->2.227deg, EN000 confirmed. Beyond old2deg boundary;8s not completed, long-term stability unachieved."
+  "balance_validation": "Previous full-wheel feedback trials7.110s/6.219s body-rate stops. WPlane1 physical balance comparison pending; no long-term success."
 }

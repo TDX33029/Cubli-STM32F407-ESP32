@@ -242,9 +242,41 @@ static void test_corner_verified_control_law(void) {
  yaw=dot3(cubli_bal.attitude.gyro_rad,cubli_bal.reference[3]);
  for(i=0;i<3;i++) {
   int axis=cubli_bal.body_axis[i];float r=cubli_bal.reference[3][axis];
-  float expected=-(80*err[axis]*angle/s+5*(cubli_bal.attitude.gyro_rad[axis]-yaw*r)+3*yaw*r)+.030f*shaft_velocity[i];
+  float wheel_yaw=5*cubli_bal.reference[3][1]-8*cubli_bal.reference[3][2]+11*cubli_bal.reference[3][0];
+  float expected=-(80*err[axis]*angle/s+5*(cubli_bal.attitude.gyro_rad[axis]-yaw*r)+3*yaw*r)+.030f*(shaft_velocity[i]-wheel_yaw*r);
   assert(fabsf(cubli_bal.control_u[i]-expected)<.0001f);
   assert(cubli_bal.tilt_int[i]==0); /* no hidden integral with BTRIM off */
+ }
+}
+static void test_corner_wheel_feedback_plane(void) {
+ int i,trial;float w[3],yaw_u,*ref,body_u[3],tangent[3];
+ setup_corner_auto();corner_auto_ticks(1150,0,0,0,0);
+ ref=cubli_bal.reference[3];
+ /* Physical invariants for multiple axis signs, independent of encoder sign. */
+ for(trial=0;trial<2;trial++) {
+  for(i=0;i<3;i++) {
+   if(trial) cubli_bal.body_direction[i]=(i==1?-1:1);
+   LQR_SetGains(i,0,0,-.04f,0);
+   w[i]=-(float)cubli_bal.body_direction[i]*100*ref[cubli_bal.body_axis[i]];
+  }
+  corner_auto_ticks(1,0,w[0],w[1],w[2]);
+  for(i=0;i<3;i++) assert(fabsf(cubli_bal.control_u[i])<.0001f);
+  /* A pure tilt spin still produces the full established wheel feedback. */
+  tangent[0]=ref[1];tangent[1]=-ref[0];tangent[2]=0;
+  for(i=0;i<3;i++) w[i]=-(float)cubli_bal.body_direction[i]*20*tangent[cubli_bal.body_axis[i]];
+  corner_auto_ticks(1,0,w[0],w[1],w[2]);
+  for(i=0;i<3;i++) assert(fabsf(cubli_bal.control_u[i]-.04f*w[i])<.0001f);
+  /* Unequal Kw/Ki still cannot inject vertical wheel feedback. */
+  for(i=0;i<3;i++) {LQR_SetGains(i,0,0,-.01f*(i+1),.001f*(i+1));cubli_bal.wheel_int[i]=10*(i+1);}
+  corner_auto_ticks(1,0,10,-15,20);
+  for(i=0;i<3;i++) body_u[cubli_bal.body_axis[i]]=cubli_bal.body_direction[i]*cubli_bal.control_u[i];
+  yaw_u=dot3(body_u,ref);assert(fabsf(yaw_u)<.0001f);
+  /* Existing yaw damping works with vertical wheel spin present. */
+  for(i=0;i<3;i++) {LQR_SetGains(i,0,0,-.04f,0);cubli_bal.attitude.gyro_rad[i]=.2f*ref[i];
+                   w[i]=-(float)cubli_bal.body_direction[i]*100*ref[cubli_bal.body_axis[i]];}
+  corner_auto_ticks(1,0,w[0],w[1],w[2]);
+  for(i=0;i<3;i++) assert(fabsf(cubli_bal.control_u[i]-cubli_bal.body_direction[i]*.6f*ref[cubli_bal.body_axis[i]])<.0001f);
+  memset(cubli_bal.attitude.gyro_rad,0,sizeof(cubli_bal.attitude.gyro_rad));
  }
 }
 static void test_corner_immediate_feedback(void) {
@@ -266,7 +298,7 @@ static void test_corner_immediate_feedback(void) {
  assert(cubli_bal.state==BAL_STATE_BALANCING&&m1_enabled&&m2_enabled&&m3_enabled);
  corner_auto_ticks(1,0,2,0,0);
  assert(HAL_GetTick()-cubli_bal.balance_since_ms<20U);
- assert(fabsf(cubli_bal.control_u[0]-.080f)<.0001f);
+ assert(fabsf(cubli_bal.control_u[0]-.080f*(1-cubli_bal.reference[3][1]*cubli_bal.reference[3][1]))<.0001f);
  command("STOP");
 }
 static void test_corner_auto(void) {
@@ -534,6 +566,7 @@ int main(void) {
  test_corner_auto();
  test_corner_trim();
  test_corner_verified_control_law();
+ test_corner_wheel_feedback_plane();
  test_corner_immediate_feedback();
  test_corner_tight_entry();
  test_neutral_search();

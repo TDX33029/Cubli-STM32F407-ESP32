@@ -620,7 +620,7 @@ void Control_Status(void) {
     report_float("AttTau",cubli_bal.attitude_tau_s,2);report_int("ATune",1);
     report_float("Trim1",cubli_bal.tilt_int[0],3);report_float("Trim2",cubli_bal.tilt_int[1],3);
     report_float("Trim3",cubli_bal.tilt_int[2],3);report_float("BTrim",cubli_bal.K_tilt_trim,1);report_int("TrimTune",1);
-    report_int("NTune",3);report_int("NOn",cubli_bal.neutral_enabled);
+    report_int("WPlane",1);report_int("NTune",3);report_int("NOn",cubli_bal.neutral_enabled);
     if(cubli_bal.mode==BAL_MODE_CORNER && cubli_bal.reference_valid[3]) {
         const float *ref=LQR_GetControlReference(),*r=cubli_bal.neutral_rotation;
         report_float("NPit",atan2f(ref[1],sqrtf(ref[0]*ref[0]+ref[2]*ref[2]))*RAD_TO_DEG,2);

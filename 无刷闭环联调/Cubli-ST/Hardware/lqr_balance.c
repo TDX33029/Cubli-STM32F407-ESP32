@@ -354,7 +354,7 @@ bool LQR_CaptureReference(void) {
 void LQR_Balance_Loop(void) {
     int i,first,last,m=(int)cubli_bal.mode;
     uint32_t now=micros();
-    float dt=(now-cubli_bal.last_update_us)*1e-6f,err[3]={0},tilt,full_tilt,rate_yaw;
+    float dt=(now-cubli_bal.last_update_us)*1e-6f,err[3]={0},tilt,full_tilt,rate_yaw,wheel_feedback_yaw=0;
     float *g=cubli_bal.attitude.gravity;
     const float *ref;
     cubli_bal.last_update_us=now;
@@ -475,6 +475,16 @@ void LQR_Balance_Loop(void) {
     }
     rate_yaw=dot3(cubli_bal.attitude.gyro_rad,ref);
     first=m<3?m:0; last=m<3?m:2;
+    /* Corner wheel feedback stabilizes tilt only. Feeding its vertical
+       component through the tilt Kw also drives yaw wheel momentum, which
+       cannot identify a COM angle and can exhaust a wheel while tilt is small.
+       BYAW remains the independent damping of rotation about gravity. */
+    if(m==3) for(i=0;i<3;i++) {
+        LQR_Gains_t *p=LQR_GetGains(i);
+        if(!sensor_valid[i] || !motor_aligned[i] || !isfinite(shaft_velocity[i])) {LQR_Trip();return;}
+        wheel_feedback_yaw+=(float)cubli_bal.body_direction[i]*ref[cubli_bal.body_axis[i]]*
+                            (p->K_w*shaft_velocity[i]+p->K_i*cubli_bal.wheel_int[i]);
+    }
     for(i=first;i<=last;i++) {
         LQR_Gains_t *p=LQR_GetGains(i);
         int axis=cubli_bal.body_axis[i];
@@ -497,6 +507,7 @@ void LQR_Balance_Loop(void) {
         body=p->K_theta*err[axis]+p->K_dtheta*rate;
         if(m==3) body+=cubli_bal.K_yaw_damping*rate_yaw*ref[axis];
         u=cubli_bal.body_direction[i]*body-wheel_weight*(p->K_w*shaft_velocity[i]+p->K_i*cubli_bal.wheel_int[i]);
+        if(m==3) u+=(float)cubli_bal.body_direction[i]*wheel_feedback_yaw*ref[axis];
         /* Experimental attitude integral, in the same body-axis convention as PD.
            It integrates reference error; it does not identify the neutral COM pose. */
         if(m==3) u+=cubli_bal.body_direction[i]*wheel_weight*cubli_bal.K_tilt_trim*cubli_bal.tilt_int[i];
