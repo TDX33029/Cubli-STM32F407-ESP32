@@ -35,6 +35,7 @@ parser.add_argument('--countdown', type=int, default=2)
 parser.add_argument('--capture-angle', type=float, default=.5, help='Total entry tilt in degrees, 0.5..3')
 parser.add_argument('--voltage', type=float, default=3.5)
 parser.add_argument('--wheel-bound', type=float, default=100)
+parser.add_argument('--body-rate-bound', type=float, default=1.5, help='Host body angular-rate stop, 1.5..2rad/s; default remains1.5')
 parser.add_argument('--kp', type=float, default=80)
 parser.add_argument('--kd', type=float, default=5)
 parser.add_argument('--kw', type=float, nargs=3, default=[-.030, -.030, -.030])
@@ -57,6 +58,7 @@ parser.add_argument('--probe-delay', type=float, default=.35, help='Zero-output 
 args = parser.parse_args()
 if not (0 < args.seconds <= 15 and 10 <= args.wait_seconds <= 600 and 2 <= args.countdown <= 15 and .5 <= args.capture_angle <= 3
         and 0 < args.voltage <= 6 and 30 <= args.wheel_bound <= 250
+        and 1.5 <= args.body_rate_bound <= 2
         and 0 <= args.kp <= 120 and 0 <= args.kd <= 10 and all(abs(v) <= .1 for v in args.kw)
         and sorted(args.body_axes) == [1, 2, 3]):
     parser.error('Corner diagnostic bounds exceeded')
@@ -70,7 +72,7 @@ if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0
         and all(v == 0 for v in args.kw) and args.yaw_damping == 0 and 0 < abs(args.probe_voltage) <= 3
         and abs(args.probe_voltage) <= args.voltage and 20 <= args.probe_ms <= 80
         and .1 <= args.probe_delay <= .35
-        and args.wheel_bound <= 60 and .5 <= args.seconds <= 1.5):
+        and args.wheel_bound <= 60 and args.body_rate_bound == 1.5 and .5 <= args.seconds <= 1.5):
     parser.error('Probe requires fixed reference, all gains/yaw zero, <=3V/80ms and wheel guard <=60rad/s')
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 if args.neutral_learning and (args.reference_gravity is None or args.probe_motor):
@@ -87,6 +89,8 @@ elif args.neutral_learning:
 else:
     tau = args.attitude_tau if args.attitude_tau is not None else .25
     publisher.trial_text = f'{args.seconds:g}秒单点对照 · 姿态校正{tau:g}秒'
+if args.body_rate_bound != 1.5:
+    publisher.trial_text += f' · 机体角速度上限{args.body_rate_bound:g}rad/s'
 if min(abs(v) for v in expected_g) < .25:
     parser.error('Expected pose is too close to a face/edge; capture a corner pose first')
 if args.reference_gravity is not None:
@@ -225,7 +229,7 @@ def pump(duration):
                     rate = math.sqrt(sum(float(data[k]) ** 2 for k in ('Gx', 'Gy', 'Gz'))) * math.pi / 180
                     # Moving a disabled cube towards the target is expected.
                     # The MCU owns pose/stillness checks during its countdown.
-                    if (data.get('Bal') in ('3', '7') or data.get('EN') == '111') and (rate > 1.5 or tilt(gravity(data), reference) > 10):
+                    if (data.get('Bal') in ('3', '7') or data.get('EN') == '111') and (rate > args.body_rate_bound or tilt(gravity(data), reference) > 10):
                         summary['guard_frame']=data
                         raise RuntimeError('Corner body rate/tilt bound')
                     if data.get('Bal') == '3':
@@ -423,7 +427,7 @@ finally:
         elif 'body rate/tilt bound' in error_text:
             frame = summary.get('guard_frame', {})
             rate = math.sqrt(sum(float(frame.get(k, 0))**2 for k in ('Gx','Gy','Gz')))*math.pi/180
-            publisher.outcome_text = '角速度保护停机' if rate > 1.5 else '倾角保护停机'
+            publisher.outcome_text = '角速度保护停机' if rate > args.body_rate_bound else '倾角保护停机'
         elif 'Firmware protection' in error_text or 'ERR' in error_text:
             publisher.outcome_text = '固件保护停机'
         elif 'not achieved' in error_text or 'not ready' in error_text:

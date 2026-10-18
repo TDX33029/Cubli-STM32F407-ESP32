@@ -124,7 +124,8 @@ class Device:
         active = self.state['Bal'] == '3'
         self.had_active |= active
         data = dict(Bal=self.state['Bal'], EN=self.state['EN'], Pit='23.56', Rol='46.79',
-                    Gx='100' if active and self.fault == 'gyro' else '.5', Gy='-.4', Gz='.2',
+                    Gx='100' if active and self.fault in ('gyro','tilt_with_rate') else
+                    ('130' if active and self.fault == 'gyro_big' else '.5'), Gy='-.4', Gz='.2',
                     S1='0', S2='101' if active and self.fault == 'M2_speed' else
                     ('400' if active and self.fault == 'wheel_guard' else '0'), S3='0')
         if self.fault == 'probe_stale_tele' and not self.had_active:
@@ -134,9 +135,12 @@ class Device:
             data.update(Pit='0', Rol='90', Gx='120')
         if active and self.fault == 'nan':
             data['S3']='nan'
+        if active and self.fault == 'tilt_with_rate':
+            data['Pit']='35'
         if self.fast:
             data.update(V1=data['S1'], V2=data['S2'], V3=data['S3'],
-                        Wx='1.746' if active and self.fault == 'gyro' else '0', Wy='0', Wz='0')
+                        Wx='1.746' if active and self.fault in ('gyro','tilt_with_rate') else
+                        ('2.269' if active and self.fault == 'gyro_big' else '0'), Wy='0', Wz='0')
             if self.state.get('NOn') == '1' and self.fault != 'no_neutral_fast':
                 data.update(NPit='23.8', NRol='46.5')
                 if self.fault == 'neutral_out_of_bounds':
@@ -156,7 +160,7 @@ class Device:
 
 class CornerDiagnosticTests(unittest.TestCase):
     def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False,
-                  probe_motor=1, probe_delay=.35, tau=None):
+                  probe_motor=1, probe_delay=.35, tau=None, rate_bound=1.5):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -167,7 +171,7 @@ class CornerDiagnosticTests(unittest.TestCase):
             pose.write_text(json.dumps({'ranges': {'Pit': {'median': 23.56}, 'Rol': {'median': 46.79}}}))
             argv = [str(SCRIPT), '--tag', 'sim', '--output-dir', directory,
                     '--expected-pose', str(pose), '--body-axes', '2', '3', '1',
-                    '--directions', '-1', '-1', '-1'] + (['--prepare-only'] if prepare else [])
+                    '--directions', '-1', '-1', '-1','--body-rate-bound',str(rate_bound)] + (['--prepare-only'] if prepare else [])
             if saved:
                 argv += ['--reference-gravity', '-.668', '.4', '.627']
             if yaw is not None:
@@ -204,6 +208,21 @@ class CornerDiagnosticTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn('BNEUTRAL 0', device.commands)
         self.assertFalse(any(c.startswith('BNEUTRAL 1') for c in device.commands))
+
+    def test_explicit_body_rate_bound_allows_rate_below_two(self):
+        _,result,code=self.run_trial(fault='gyro',rate_bound=2)
+        self.assertEqual(code,0)
+        self.assertEqual(result['settings']['body_rate_bound'],2)
+
+    def test_rate_above_explicit_bound_still_disarms(self):
+        _,result,code=self.run_trial(fault='gyro_big',rate_bound=2)
+        self.assertEqual(code,2)
+        self.assertIn('Corner body rate/tilt bound',result['error'])
+
+    def test_stop_reason_uses_new_rate_bound_for_tilt_event(self):
+        _,result,code=self.run_trial(fault='tilt_with_rate',rate_bound=2,live=True)
+        self.assertEqual(code,2)
+        self.assertEqual(result['_published_live_state']['outcome_text'],'倾角保护停机')
 
     def test_baseline_clears_previous_observer_experiment(self):
         device,result,code = self.run_trial()
