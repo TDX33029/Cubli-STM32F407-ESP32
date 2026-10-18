@@ -1,21 +1,53 @@
-# Cubli-F407ZGT6 Dialogs
+# Cubli Wireless
 
 [🇨🇳 简体中文](README.md) | [🇬🇧 English](README_EN.md)
 
-Cubli STM32F407ZGT6 版本更新日志
+> LQR 平衡控制器算法 · STM32F407ZGT6 + ESP32-WROOM32 联合工程 支持二次开发学习
 
-[260327]Version0.7版本 初版物料选型已完成确定
+## 简介
 
-[260419]Version0.8版本 主板MT6701编码器方案验证通过
+本工程为 Cubli 平衡控制器的完整开源实现，包含固件、硬件、机械结构、上位机软件及全部必要文档，所有材料均已提供，不再赘述。
 
-[260424]Version1.1-alpha版本 电源保护方案BM3451UNDC存在问题 电机驱动DRV8313存在致命问题
+## 编译与构建
 
-[260424]Version1.2-alpha版本 增添大量调试指示用LED 每个DRV8313配备三颗LED分别用于显示 使能/主机调用/故障 状态 每个主模块配备 LED 指示
+| 组件 | 工具链 |
+| --- | --- |
+| STM32F407ZGT6 固件 | Keil MDK V5.06 |
+| ESP32-WROOM32 固件 | PlatformIO |
 
-[260607]Version1.2-alpha电源管理BM3451UNDC存在无法修复的问题 切换为中颖SH367103x管理方案 版本迭代为Version1.3-alpha。修改存在的编码器端子不适配问题
+## 文件结构
 
-[260923]电源保护方案验证通过 等待验证航模电池充电功能 规划加入ESP32-WROOM用于无线调试 版本迭代为Version1.4
+| 目录 | 内容 |
+| --- | --- |
+| `Docs/` | 必要的数据手册文档 |
+| `Firmware/` | STM32F407ZGT6 与 ESP32-WROOM32 固件源码 |
+| `Hardware/` | PCB 相关资源文件 |
+| `History/` | 历史提交归档 |
+| `Mechanical/` | 机械结构相关资源文件 |
+| `Software/` | 上位机控制器源码与可执行文件 |
 
-[261007]Version1.4版本完成 修复已知的小问题
+## 演示与预览
 
-[261018]120s史无前例的单点平衡已经实现 USART2准备迁移到无线串口
+### 平衡控制器演示
+
+https://github.com/user-attachments/assets/2c3d52b1-5e99-43fa-8d38-f5f9dfa2442f
+
+### PCB 渲染与 Layout
+
+| PCB 正面渲染 | PCB 背面渲染 |
+| :---: | :---: |
+| <img width="420" alt="MB-3D-TOP" src="https://github.com/user-attachments/assets/26748395-add2-4757-8d9f-f4d24fbee5a7" /> | <img width="420" alt="MB-3D-BOTTOM" src="https://github.com/user-attachments/assets/2181a578-62b7-43b6-971a-71c5a09fe83f" /> |
+
+<p align="center">
+  <img width="600" alt="PCB Layout" src="https://github.com/user-attachments/assets/003e6266-b337-4695-b552-10e06c502872" />
+  <br />
+  <em>PCB 本体 Layout</em>
+</p>
+
+### 机械结构
+
+<p align="center">
+  <img width="600" alt="3D 结构框架透视图" src="https://github.com/user-attachments/assets/1d9fed10-6077-42a5-a9cf-18adb0dea282" />
+  <br />
+  <em>3D 结构框架透视图</em>
+</p>

@@ -1,21 +1,53 @@
-# Cubli-F407ZGT6 Dialogs
+# Cubli Wireless
 
 [🇨🇳 简体中文](README.md) | [🇬🇧 English](README_EN.md)
 
-Cubli STM32F407ZGT6 Changelog
+> LQR balancing controller algorithm · STM32F407ZGT6 + ESP32-WROOM32 joint project · Supports secondary development and learning
 
-[260327]Version 0.7, initial bill of materials (BOM) selection has been finalized
+## Introduction
 
-[260419]Version 0.8, mainboard MT6701 encoder solution verified
+This project is a complete open-source implementation of the Cubli balancing controller, including firmware, hardware, mechanical structure, host software, and all necessary documentation. All materials are provided and will not be repeated here.
 
-[260424]Version 1.1-alpha, power protection scheme BM3451UNDC has issues, motor driver DRV8313 has fatal issues
+## Build & Compilation
 
-[260424]Version 1.2-alpha, added numerous debugging indicator LEDs; each DRV8313 is equipped with three LEDs to display Enable / Host Call / Fault status, and each main module is equipped with LED indicators
+| Component | Toolchain |
+| --- | --- |
+| STM32F407ZGT6 Firmware | Keil MDK V5.06 |
+| ESP32-WROOM32 Firmware | PlatformIO |
 
-[260607]Version 1.2-alpha power management BM3451UNDC has unfixable issues, switched to Sinowealth SH367103x management solution, iterated version to Version 1.3-alpha. Fixed encoder connector incompatibility issues
+## Directory Structure
 
-[260923]Power protection scheme verified, pending validation of RC battery charging function, planning to add ESP32-WROOM for wireless debugging, iterated version to Version 1.4
+| Directory | Contents |
+| --- | --- |
+| `Docs/` | Necessary datasheets and documentation |
+| `Firmware/` | STM32F407ZGT6 and ESP32-WROOM32 firmware source code |
+| `Hardware/` | PCB-related resource files |
+| `History/` | Archived historical commits |
+| `Mechanical/` | Mechanical structure-related resource files |
+| `Software/` | Host controller source code and executables |
 
-[261007]Version1.4 completed，fixed some previous issues
+## Demo & Preview
 
-[261018]Unprecedented single-point balance has been achieved, ready to switch to the wireless serial port
+### Balancing Controller Demo
+
+https://github.com/user-attachments/assets/2c3d52b1-5e99-43fa-8d38-f5f9dfa2442f
+
+### PCB Rendering & Layout
+
+| PCB Top Rendering | PCB Bottom Rendering |
+| :---: | :---: |
+| <img width="420" alt="MB-3D-TOP" src="https://github.com/user-attachments/assets/26748395-add2-4757-8d9f-f4d24fbee5a7" /> | <img width="420" alt="MB-3D-BOTTOM" src="https://github.com/user-attachments/assets/2181a578-62b7-43b6-971a-71c5a09fe83f" /> |
+
+<p align="center">
+  <img width="600" alt="PCB Layout" src="https://github.com/user-attachments/assets/003e6266-b337-4695-b552-10e06c502872" />
+  <br />
+  <em>PCB Layout</em>
+</p>
+
+### Mechanical Structure
+
+<p align="center">
+  <img width="600" alt="3D Structural Frame Perspective View" src="https://github.com/user-attachments/assets/1d9fed10-6077-42a5-a9cf-18adb0dea282" />
+  <br />
+  <em>3D Structural Frame Perspective View</em>
+</p>
