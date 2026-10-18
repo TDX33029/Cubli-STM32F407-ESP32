@@ -17,5 +17,5 @@
     "Cubli-ST/Core/Src/main.c": "eff3fbce371f97cf74e8f774bd9855bd21c13acfa113c1aedac7ef1f2f012bd3",
     "Cubli-ST/Core/Src/usart.c": "2a85914b0138809ee45a4287ca2e81e900c7764df3831e505ae8ac73b3b1da9c"
   },
-  "balance_validation": "5deg physical balance not yet tested. Prior2deg trial5.109s stopped on body rate; long-term stability unachieved."
+  "balance_validation": "neutral5_seed_trial8s_01:7.110s body-rate2.098 stop, NOff1.060->2.227deg, EN000 confirmed. Beyond old2deg boundary;8s not completed, long-term stability unachieved."
 }
