@@ -6,15 +6,6 @@ extern void set_motor_enable(uint8_t motor, uint8_t en);
 extern uint8_t Control_Aborted(void);
 extern void Control_RequestStop(uint8_t reason);
 
-/************************************************
-main中调用的接口函数都在当前文件中
-=================================================
-本程序仅供学习，引用代码请标明出处
-使用教程：https://blog.csdn.net/loop222/article/details/119220638
-创建日期：20210801
-作    者：loop222 @郑州
-  F4移植: 适配168MHz, TIM1 PWM (PE9/PE11/PE13)
-************************************************/
 /******************************************************************************/
 float motor_test_travel_deg[3]={0,0,0};
 float voltage_power_supply;
