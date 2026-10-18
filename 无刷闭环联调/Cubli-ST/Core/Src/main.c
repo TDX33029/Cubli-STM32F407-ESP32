@@ -620,13 +620,13 @@ void Control_Status(void) {
     report_float("AttTau",cubli_bal.attitude_tau_s,2);report_int("ATune",1);
     report_float("Trim1",cubli_bal.tilt_int[0],3);report_float("Trim2",cubli_bal.tilt_int[1],3);
     report_float("Trim3",cubli_bal.tilt_int[2],3);report_float("BTrim",cubli_bal.K_tilt_trim,1);report_int("TrimTune",1);
-    report_int("NTune",2);report_int("NOn",cubli_bal.neutral_enabled);
+    report_int("NTune",3);report_int("NOn",cubli_bal.neutral_enabled);
     if(cubli_bal.mode==BAL_MODE_CORNER && cubli_bal.reference_valid[3]) {
         const float *ref=LQR_GetControlReference(),*r=cubli_bal.neutral_rotation;
         report_float("NPit",atan2f(ref[1],sqrtf(ref[0]*ref[0]+ref[2]*ref[2]))*RAD_TO_DEG,2);
         report_float("NRol",atan2f(-ref[0],ref[2])*RAD_TO_DEG,2);
         report_float("NOff",sqrtf(r[0]*r[0]+r[1]*r[1]+r[2]*r[2])*RAD_TO_DEG,3);
-        report_float("NLimit",2,1);report_float("NRate",cubli_bal.neutral_rate_deg_s,2);
+        report_float("NLimit",cubli_bal.neutral_limit_deg,2);report_float("NRate",cubli_bal.neutral_rate_deg_s,2);
         report_float("NGain",cubli_bal.neutral_gain,6);
     }
     report_float("U1",voltage[0].q,2);
@@ -675,7 +675,7 @@ void commander_run(void) {
                "M1/M2/M3 speed independently; EN1/EN2/EN3 0/1; ACC rad/s^2; STOP; PING (every 250ms)\r\n"
                "BMODE 1..3=edge/4=corner; CAL_IMU; BZERO; BREF gx gy gz; BAXIS1/2/3 1..3; BDIR1/2/3 +/-1; BAL 0/1; BSTART 2..15 seconds; BAUTO 0/1 [2..15 seconds]; BFULL speed; BCAP 0.5..10 deg; BTRIP 10..60 deg; BYAW 0..10; BTRIM 0..10; BPROBE volts ms\r\n"
                "LQR1/2/3 [Kp Kd Kw Ki]; ZERO1/2/3 deg (edge); BU volts; U volts; L rad/s; PID1/2/3 [P I D]; TF seconds\r\n"
-               "BNEUTRAL 0/1 [gain rate_deg_s]: disarmed corner, 2deg total, gain0.000005..0.00025/rate0.01..0.5, Ki/BTRIM=0\r\n"
+               "BNEUTRAL 0/1 [gain rate_deg_s [limit_deg [seed_pitch seed_roll]]]: disarmed corner, limit2..5, Ki/BTRIM=0\r\n"
                "BATTAU .25..2 seconds: disarmed accelerometer correction time constant\r\n"
                "FF[1/2/3] [coulomb_V bemf_V_per_rad_s]; STATE?\r\n"); Control_Status();
     } else if(!strcmp(name,"APP") && n==1 && (v[0]==0 || v[0]==1)) {
@@ -725,12 +725,24 @@ void commander_run(void) {
     } else if(!strcmp(name,"BATTAU") && n==1) {
         if(m1_enabled || m2_enabled || m3_enabled || !LQR_SetAttitudeTau(v[0])) {printf("ERR BATTAU (disarm, range.25..2s)\r\n");return;}
         printf("OK BATTAU\r\n");
-    } else if(!strcmp(name,"BNEUTRAL") && ((n==1 && (v[0]==0 || v[0]==1)) || (n==3 && v[0]==1))) {
-        if(n==3 && (v[1]<0.000005f || v[1]>0.00025f || v[2]<0.01f || v[2]>0.5f)) {printf("ERR NEUTRAL_RANGE\r\n");return;}
+    } else if(!strcmp(name,"BNEUTRAL") && ((n==1 && (v[0]==0 || v[0]==1)) || ((n==3 || n==4 || n==6) && v[0]==1))) {
+        float limit=n>=4?v[3]:2.0f;
+        float *rotation=cubli_bal.neutral_rotation;
+        if((n>=3 && (v[1]<0.000005f || v[1]>0.00025f || v[2]<0.01f || v[2]>0.5f)) ||
+           limit<2 || limit>5 || (n==6 && (fabsf(v[4])>89 || fabsf(v[5])>180))) {printf("ERR NEUTRAL_RANGE\r\n");return;}
+        if(v[0]!=0 && sqrtf(rotation[0]*rotation[0]+rotation[1]*rotation[1]+rotation[2]*rotation[2])*RAD_TO_DEG>limit+.001f) {
+            printf("ERR NEUTRAL_LIMIT_BELOW_OFFSET\r\n");return;
+        }
         if(m1_enabled || m2_enabled || m3_enabled || !LQR_SetNeutralLearning(v[0]!=0)) {
             printf("ERR BNEUTRAL (disarm, corner reference/calibration and Ki/BTRIM=0 required)\r\n");return;
         }
-        if(n==3) {cubli_bal.neutral_gain=v[1];cubli_bal.neutral_rate_deg_s=v[2];}
+        if(v[0]!=0) cubli_bal.neutral_limit_deg=limit;
+        if(n>=3) {cubli_bal.neutral_gain=v[1];cubli_bal.neutral_rate_deg_s=v[2];}
+        if(n==6) {
+            float p=v[4]*DEG_TO_RAD,r=v[5]*DEG_TO_RAD,seed[3];
+            seed[0]=-sinf(r)*cosf(p);seed[1]=sinf(p);seed[2]=cosf(r)*cosf(p);
+            if(!LQR_SeedNeutralReference(seed)) {LQR_ResetNeutralLearning();printf("ERR NEUTRAL_SEED_OUTSIDE_BOUNDARY\r\n");return;}
+        }
         printf("OK BNEUTRAL\r\n");
     } else if(!strcmp(name,"BTRIM") && n==1 && v[0]>=0 && v[0]<=10) {
         if(cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST\r\n");return;}

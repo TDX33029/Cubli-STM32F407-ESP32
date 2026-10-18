@@ -1,22 +1,21 @@
 {
   "date_local": "2026-10-18",
   "encoder": "I2C absolute",
-  "change": "Refresh default MDK CubeMX outputs from current source; previous default was stale entry2s. Matches previously tested observer image byte-for-byte.",
-  "hex_sha256": "fc2b4c2bd48e200d78c7fb094de2150e3ce23f0787d696df2477db035051adec",
-  "hex_data_bytes": 52524,
+  "change": "NTune3: configurable2..5deg total original-base cone and disabled learned-reference seed; legacy2deg defaults retained.",
+  "hex_sha256": "d65fca81c96584df2b3e498d7d457833c68d523d1c2454dce4e6b69e2e0f51bd",
+  "hex_data_bytes": 53244,
   "build_inputs": 38,
   "armcc_errors": 0,
   "armcc_warnings": 0,
-  "matches_previously_tested_observer_hex": true,
   "flashed": true,
   "flash_verification": "Download verified successfully; reset performed",
-  "postflash_alignment_and_calibration": "startup_prep01: Aligned111 Cal1 EN000 Fault0 Enc111 NTune2 ATune1; map3/1/2,7PP,sensor directions+1",
-  "previous_firmware_backup": "diagnostics/2026-10-18/initial_flash_readback.bin",
+  "flash_log": "flash_neutral5_verified_2026-10-18.log",
+  "postflash_alignment_and_calibration": "neutral5_startup_prep01: Aligned111 Cal1 IMU1 EN000 Fault0 Enc111; map3/1/2,7PP,sensor directions+1",
   "source_hashes": {
-    "Cubli-ST\\Hardware\\lqr_balance.c": "c21a261cc78c227650627bed004a6b33f36955da7d8ccc08490e5bfca0308739",
-    "Cubli-ST\\Hardware\\lqr_balance.h": "77c4faeaf46df6aea5a87c74d27beaf38972bcbc4563be1473a726d90ea13adf",
-    "Cubli-ST\\Core\\Src\\main.c": "1ea315f2b21c34f4cc466e7d653010954911dbe612b67f0e313df5f57c27292f",
-    "Cubli-ST\\Core\\Src\\usart.c": "2a85914b0138809ee45a4287ca2e81e900c7764df3831e505ae8ac73b3b1da9c"
+    "Cubli-ST/Hardware/lqr_balance.c": "4e2f96ed7178f25a31c169758ef6f5e6d19bc731d6a89dc8e1126384f13632c4",
+    "Cubli-ST/Hardware/lqr_balance.h": "2f2d4eaba64c3af1554332dd18eaf7fd018d172392901c2de7ebffa339c114c6",
+    "Cubli-ST/Core/Src/main.c": "eff3fbce371f97cf74e8f774bd9855bd21c13acfa113c1aedac7ef1f2f012bd3",
+    "Cubli-ST/Core/Src/usart.c": "2a85914b0138809ee45a4287ca2e81e900c7764df3831e505ae8ac73b3b1da9c"
   },
-  "balance_validation": "2026-10-18: Kp120/Kd5 tau.25 failed1.563s; Kp120/Kd10 tau.25 failed2.516s; both body-rate guards and final EN000. No long-run success. Tau2 comparison pending."
+  "balance_validation": "5deg physical balance not yet tested. Prior2deg trial5.109s stopped on body rate; long-term stability unachieved."
 }

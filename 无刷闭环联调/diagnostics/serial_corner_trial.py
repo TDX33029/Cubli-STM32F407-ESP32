@@ -14,6 +14,7 @@ from pathlib import Path
 import serial
 from live_pose import PosePublisher
 from serial_monitor_handoff import SerialMonitorHandoff
+from neutral_resume import validate_previous, matches_saved_state
 
 
 def gravity(data):
@@ -47,6 +48,9 @@ parser.add_argument('--expected-pose', type=Path, required=True, help='Disabled 
 parser.add_argument('--reference-gravity', type=float, nargs=3, help='Saved normalized corner target; requires CornerStart firmware')
 parser.add_argument('--prepare-only', action='store_true', help='Capture/configure, then STOP without arming')
 parser.add_argument('--neutral-learning', action='store_true', help='Bounded slow corner reference search, updated firmware required')
+parser.add_argument('--neutral-limit', type=float, default=2, help='Total search cone about original reference, 2..5 degrees')
+parser.add_argument('--seed-neutral-from', type=Path, help='Restore saved learned target after reset, retaining the original base')
+parser.add_argument('--resume-neutral-from', type=Path, help='Previous summary; retain MCU learned offset and original base after strict fresh-state checks')
 parser.add_argument('--neutral-gain', type=float, default=.000025, help='Slow search gain, .000005.. .00025')
 parser.add_argument('--neutral-rate', type=float, default=.1, help='Maximum search speed, .01.. .5 degrees/s')
 parser.add_argument('--output-dir', type=Path, default=Path(__file__).resolve().parent / '2026-10-14')
@@ -77,7 +81,11 @@ if args.probe_motor and not (args.reference_gravity is not None and args.kp == 0
 expected = json.loads(args.expected_pose.read_text(encoding='utf-8'))
 if args.neutral_learning and (args.reference_gravity is None or args.probe_motor):
     parser.error('Neutral search requires a saved base reference and cannot be combined with a probe')
-if not (.000005 <= args.neutral_gain <= .00025 and .01 <= args.neutral_rate <= .5):
+if args.resume_neutral_from and args.seed_neutral_from:
+    parser.error('Choose resume or seed, not both')
+if (args.resume_neutral_from or args.seed_neutral_from) and not args.neutral_learning:
+    parser.error('Resume requires neutral learning and the same original reference/configuration')
+if not (.000005 <= args.neutral_gain <= .00025 and .01 <= args.neutral_rate <= .5 and 2 <= args.neutral_limit <= 5):
     parser.error('Neutral tuning bounds exceeded')
 expected_g = gravity({key: expected['ranges'][key]['median'] for key in ('Pit', 'Rol')})
 publisher=PosePublisher(args.live_state, capture_angle=args.capture_angle)
@@ -85,7 +93,7 @@ publisher.trial_id = args.tag
 if args.probe_motor:
     publisher.trial_text = f'M{args.probe_motor} {args.probe_voltage:+g}V / {args.probe_ms}ms 短脉冲'
 elif args.neutral_learning:
-    publisher.trial_text = f'{args.seconds:g}秒单点自动寻点'
+    publisher.trial_text = f'{args.seconds:g}秒单点自动寻点 · 总寻点范围{args.neutral_limit:g}°'
 else:
     tau = args.attitude_tau if args.attitude_tau is not None else .25
     publisher.trial_text = f'{args.seconds:g}秒单点对照 · 姿态校正{tau:g}秒'
@@ -187,7 +195,7 @@ def pump(duration):
             else:
                 if watch and args.neutral_learning and not all(k in data and math.isfinite(float(data[k])) for k in ('NPit','NRol')):
                     raise RuntimeError('Missing/non-finite learned reference telemetry')
-                if watch and args.neutral_learning and tilt(reference, gravity({'Pit':data['NPit'],'Rol':data['NRol']}))>2.03:
+                if watch and args.neutral_learning and tilt(reference, gravity({'Pit':data['NPit'],'Rol':data['NRol']}))>args.neutral_limit+.03:
                     summary['guard_frame'] = data
                     raise RuntimeError('Neutral reference bound')
                 probing = args.probe_motor is not None and (phase.startswith('probe_') or phase == 'finish')
@@ -290,17 +298,28 @@ try:
     command('STOP')
     command('FAST 0')
     command('TELE 1')
-    command('APP 0')
+    if not args.resume_neutral_from:
+        command('APP 0')
     confirm(lambda d: d.get('Aligned') == '111' and d.get('Cal') == '1'
             and d.get('IMU') == '1' and d.get('EN') == '000' and d.get('Fault') == '0',
             'Three alignments/static IMU calibration')
-    if args.neutral_learning and state.get('NTune') != '2':
-        raise RuntimeError('Tunable neutral search requires updated firmware (NTune:2)')
-    if state.get('NTune') in ('1','2'):
+    if args.neutral_learning and (state.get('NTune') not in ('2','3') or
+            ((args.neutral_limit != 2 or args.seed_neutral_from) and state.get('NTune') != '3')):
+        raise RuntimeError('Neutral search requires compatible firmware (NTune:3 for range/seed)')
+    previous_search = None
+    if args.resume_neutral_from:
+        previous_search = json.loads(args.resume_neutral_from.read_text(encoding='utf-8'))
+        validate_previous(previous_search,args)
+        if not matches_saved_state(state,previous_search):
+            raise RuntimeError('Resume device state changed/reset; learned offset not reused')
+        summary['resumed_from']=str(args.resume_neutral_from)
+        summary['neutral_start_state']=dict(state)
+    elif state.get('NTune') in ('1','2','3'):
         command('BNEUTRAL 0')
         confirm(lambda d: d.get('NOn') == '0', 'Neutral search disabled before configuration')
-    for text in ('APP 1', 'BMODE 4', 'BAXIS ' + ' '.join(map(str, args.body_axes)),
-                 'BDIR ' + ' '.join(map(str, args.directions)), f'U {args.voltage}',
+    mapping_commands = () if previous_search else ('BMODE 4','BAXIS ' + ' '.join(map(str,args.body_axes)),
+                                                   'BDIR ' + ' '.join(map(str,args.directions)))
+    for text in ('APP 1', *mapping_commands, f'U {args.voltage}',
                  f'L {args.wheel_bound + 20}', f'BU {args.voltage}', 'BTRIP 20', f'BCAP {args.capture_angle:g}', 'FREQ 7'):
         command(text)
     for i, kw in enumerate(args.kw, 1):
@@ -341,7 +360,8 @@ try:
     if args.reference_gravity is not None:
         if not firmware_countdown:
             raise RuntimeError('Saved corner reference requires updated firmware')
-        command('BREF ' + ' '.join(f'{v:.9f}' for v in args.reference_gravity), .2)
+        if not previous_search:
+            command('BREF ' + ' '.join(f'{v:.9f}' for v in args.reference_gravity), .2)
         reference = args.reference_gravity
     else:
         command('BZERO', .2)
@@ -353,11 +373,29 @@ try:
                             'roll_deg': math.degrees(math.atan2(-reference[0],reference[2])),
                             'neutral_verified': False}
     if args.neutral_learning:
-        command(f'BNEUTRAL 1 {args.neutral_gain:g} {args.neutral_rate:g}')
-        confirm(lambda d: d.get('NTune') == '2' and d.get('NOn') == '1'
-                and abs(float(d.get('NLimit', -1))-2) < .011
+        seed_angles = None
+        neutral_command = f'BNEUTRAL 1 {args.neutral_gain:g} {args.neutral_rate:g}'
+        if state.get('NTune') == '3':
+            neutral_command += f' {args.neutral_limit:g}'
+        if args.seed_neutral_from:
+            seed_summary = json.loads(args.seed_neutral_from.read_text(encoding='utf-8'))
+            seed_angles = validate_previous(seed_summary,args,seed=True)
+            mapping_keys = ('Map1','Map2','Map3','PP1','PP2','PP3','Dir1','Dir2','Dir3')
+            if any(state.get(k)!=seed_summary['last_state'].get(k) for k in mapping_keys):
+                raise RuntimeError('Seed motor calibration mapping changed')
+            neutral_command += ' ' + ' '.join(f'{v:.6f}' for v in seed_angles)
+            summary['seeded_from'] = str(args.seed_neutral_from)
+        command(neutral_command)
+        confirm(lambda d: d.get('NTune') in ('2','3') and d.get('NOn') == '1'
+                and abs(float(d.get('NLimit', -1))-args.neutral_limit) < .011
                 and abs(float(d.get('NRate', -1))-args.neutral_rate) < .001
                 and abs(float(d.get('NGain', -1))-args.neutral_gain) < .0000006, 'Bounded neutral search enabled')
+        if seed_angles:
+            confirm(lambda d: all(abs(float(d.get(key,999))-angle)<.011
+                    for key,angle in zip(('NPit','NRol'),seed_angles)), 'Restored learned reference')
+        if previous_search:
+            confirm(lambda d: matches_saved_state(d,previous_search), 'Retained neutral target and original boundary')
+        summary['neutral_start_state'] = dict(state)
     if args.prepare_only:
         summary['result'] = 'prepared_disabled'
     else:

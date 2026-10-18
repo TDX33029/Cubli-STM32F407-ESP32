@@ -82,6 +82,23 @@ const float *LQR_GetControlReference(void) {
     return cubli_bal.mode==BAL_MODE_CORNER && cubli_bal.neutral_enabled?
            cubli_bal.neutral_reference:cubli_bal.reference[cubli_bal.mode];
 }
+bool LQR_SeedNeutralReference(const float gravity[3]) {
+    int i;float seed[3],rotation[3],n,angle,s;
+    const float *base=cubli_bal.reference[3];
+    if(cubli_bal.state!=BAL_STATE_DISABLED || cubli_bal.mode!=BAL_MODE_CORNER ||
+       !cubli_bal.neutral_enabled || !cubli_bal.reference_valid[3] ||
+       !cubli_bal.attitude.valid || !cubli_bal.attitude.is_calibrated) return false;
+    for(i=0;i<3;i++) if(!isfinite(gravity[i])) return false;
+    n=norm3(gravity);if(n<.9f || n>1.1f) return false;
+    for(i=0;i<3;i++) {seed[i]=gravity[i]/n;if(fabsf(seed[i])<.25f) return false;}
+    cross3(seed,base,rotation);s=norm3(rotation);
+    angle=atan2f(s,dot3(seed,base));
+    if(angle>cubli_bal.neutral_limit_deg*DEG_TO_RAD+1e-6f) return false;
+    for(i=0;i<3;i++) cubli_bal.neutral_rotation[i]=s>1e-8f?rotation[i]*angle/s:0;
+    memcpy(cubli_bal.neutral_reference,seed,sizeof(seed));
+    memset(cubli_bal.neutral_spin_filt,0,sizeof(cubli_bal.neutral_spin_filt));
+    return true;
+}
 static void neutral_update(float dt) {
     int i;float spin[3]={0},projected[3],step[3],axis[3],rotated[3];
     float n,s,yaw,alpha,angle,c;
@@ -113,7 +130,8 @@ static void neutral_update(float dt) {
     s=fminf(cubli_bal.neutral_gain*(n-3.0f),cubli_bal.neutral_rate_deg_s*DEG_TO_RAD)*dt/n;
     for(i=0;i<3;i++) step[i]=cubli_bal.neutral_rotation[i]+s*cubli_bal.neutral_spin_filt[i];
     n=norm3(step);
-    if(n>2*DEG_TO_RAD) for(i=0;i<3;i++) step[i]*=(2*DEG_TO_RAD)/n;
+    if(n>cubli_bal.neutral_limit_deg*DEG_TO_RAD)
+        for(i=0;i<3;i++) step[i]*=(cubli_bal.neutral_limit_deg*DEG_TO_RAD)/n;
     memcpy(cubli_bal.neutral_rotation,step,sizeof(step));
     angle=norm3(step);
     if(angle<1e-8f) {memcpy(cubli_bal.neutral_reference,base,sizeof(step));return;}
@@ -169,6 +187,7 @@ void LQR_Balance_Init(void) {
     cubli_bal.K_tilt_trim=0.0f;
     cubli_bal.neutral_gain=0.000025f;
     cubli_bal.neutral_rate_deg_s=0.1f;
+    cubli_bal.neutral_limit_deg=2;
     for(i=0;i<3;i++) {
         LQR_Gains_t g={32.0f,2.4f,0.08f,0.008f,0,5};
         cubli_bal.gains[i]=cubli_bal.corner_gains[i]=g;
@@ -273,6 +292,7 @@ bool LQR_StartProbe(float volts,uint16_t duration_ms) {
 }
 void LQR_Balance_StartCalib(void) {
     cubli_bal.attitude_tau_s=0.25f;
+    cubli_bal.neutral_limit_deg=2;
     LQR_ResetNeutralLearning();
     clear_output(); cubli_bal.state=BAL_STATE_CALIBRATING;
     cubli_bal.attitude.is_calibrated=false; cubli_bal.calib_samples=0;
@@ -518,6 +538,7 @@ void LQR_Motor_Loop(void) {
 void LQR_Balance_SetMode(BalanceMode_e mode) {
     LQR_Balance_Enable(false);
     cubli_bal.attitude_tau_s=0.25f;
+    cubli_bal.neutral_limit_deg=2;
     LQR_ResetNeutralLearning();
     if(mode<=BAL_MODE_CORNER) {
         cubli_bal.mode=mode;

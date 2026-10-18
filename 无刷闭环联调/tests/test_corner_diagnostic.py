@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+import math
 import runpy
 import sys
 import tempfile
@@ -37,7 +38,9 @@ class Device:
             if fault != 'no_attitude_tuning':
                 self.state.update(ATune='1',AttTau='1.25')
             if fault != 'no_neutral':
-                self.state.update(NTune='2', NOn='1', NLimit='2.0', NRate='0.1', NGain='0.000025')
+                self.state.update(NTune='3' if fault=='new_neutral' else '2', NOn='1', NLimit='2.0', NRate='0.1', NGain='0.000025',
+                                  NPit='23.8',NRol='46.5',NOff='0.35',
+                                  Map1='3',Map2='1',Map3='2',PP1='7',PP2='7',PP3='7',Dir1='1',Dir2='1',Dir3='1')
 
     def open(self):
         self.is_open = True
@@ -75,6 +78,11 @@ class Device:
             self.state[{'U': 'VLimit', 'L': 'SLimit', 'BTRIP': 'TripDeg'}[name]] = str(float(parts[1]))
         elif name in ('BZERO', 'BREF'):
             self.state['Ref'] = '1'
+            if name=='BREF':
+                self.base = [float(v) for v in parts[1:]]
+                p,r=math.radians(float(self.state['NPit'])),math.radians(float(self.state['NRol']))
+                target=[-math.sin(r)*math.cos(p),math.sin(p),math.cos(r)*math.cos(p)]
+                self.state['NOff']=str(math.degrees(math.acos(max(-1,min(1,sum(a*b for a,b in zip(self.base,target)))))))
         elif name == 'BYAW':
             self.state['YawD'] = parts[1]
         elif name == 'BTRIM':
@@ -85,8 +93,12 @@ class Device:
         elif name == 'BNEUTRAL':
             if self.fault != 'neutral_not_applied':
                 self.state['NOn'] = parts[1]
-                if len(parts) == 4:
+                if len(parts) >= 4:
                     self.state.update(NGain=parts[2],NRate=parts[3])
+                if len(parts)>=5:
+                    self.state['NLimit']=parts[4]
+                if len(parts)==7:
+                    self.state.update(NPit=parts[5],NRol=parts[6])
         elif name == 'BCAP':
             if self.fault != 'capture_not_applied':
                 self.state['CapDeg'] = parts[1]
@@ -142,7 +154,7 @@ class Device:
                         Wx='1.746' if active and self.fault in ('gyro','tilt_with_rate') else
                         ('2.269' if active and self.fault == 'gyro_big' else '0'), Wy='0', Wz='0')
             if self.state.get('NOn') == '1' and self.fault != 'no_neutral_fast':
-                data.update(NPit='23.8', NRol='46.5')
+                data.update(NPit=self.state['NPit'], NRol=self.state['NRol'])
                 if self.fault == 'neutral_out_of_bounds':
                     data['NPit'] = '30'
             if self.state['BMode'] != '4' and self.fault in ('probe_edge', 'missing_probe', 'probe_wrong_enable','probe_stale_tele','probe_partial_fast_on_stop','probe_state_query_drop'):
@@ -160,7 +172,7 @@ class Device:
 
 class CornerDiagnosticTests(unittest.TestCase):
     def run_trial(self, fault=None, prepare=False, saved=False, yaw=None, probe=None, live=False, neutral=False,
-                  probe_motor=1, probe_delay=.35, tau=None, rate_bound=1.5):
+                  probe_motor=1, probe_delay=.35, tau=None, rate_bound=1.5, neutral_limit=2, previous=None, resume=False, seed=False, mutate=None):
         if probe is not None:
             saved = True
             fault = fault or 'probe_edge'
@@ -187,6 +199,15 @@ class CornerDiagnosticTests(unittest.TestCase):
                 argv += ['--live-state', str(folder/'live.json')]
             if neutral:
                 argv += ['--neutral-learning']
+            argv += ['--neutral-limit',str(neutral_limit)]
+            if previous:
+                prev=folder/'previous.json'
+                prev.write_text(json.dumps(previous))
+                argv += ['--resume-neutral-from' if resume else '--seed-neutral-from',str(prev)]
+                if resume:
+                    device.state.update(previous['last_state'])
+                if mutate:
+                    device.state.update(mutate)
             code = 0
             with patch.object(sys, 'argv', argv), patch('serial.Serial', return_value=device), \
                     patch('time.monotonic', side_effect=lambda: device.now), \
@@ -269,6 +290,54 @@ class CornerDiagnosticTests(unittest.TestCase):
         device, result, code = self.run_trial(fault='neutral_out_of_bounds', saved=True, neutral=True)
         self.assertEqual(code, 2)
         self.assertIn('Neutral reference bound', result['error'])
+
+    def test_five_degree_range_requires_v3_and_readback(self):
+        device,result,code=self.run_trial(fault='new_neutral',saved=True,neutral=True,neutral_limit=5)
+        self.assertEqual(code,0)
+        self.assertIn('BNEUTRAL 1 2.5e-05 0.1 5',device.commands)
+        _,_,code=self.run_trial(saved=True,neutral=True,neutral_limit=5)
+        self.assertEqual(code,2)
+
+    def test_resume_retains_target_without_reset_commands(self):
+        _,previous,code=self.run_trial(saved=True,neutral=True)
+        self.assertEqual(code,0)
+        device,result,code=self.run_trial(saved=True,neutral=True,previous=previous,resume=True)
+        self.assertEqual(code,0,result.get('error'))
+        self.assertIn('resumed_from',result)
+        self.assertFalse(any(c.startswith(('BMODE','BAXIS','BDIR','BREF','BNEUTRAL 0','APP 0')) for c in device.commands))
+        self.assertIn('BSTART 2',device.commands)
+
+    def test_five_degree_resume_preserves_configured_cone(self):
+        _,previous,_=self.run_trial(fault='new_neutral',saved=True,neutral=True,neutral_limit=5)
+        device,result,code=self.run_trial(fault='new_neutral',saved=True,neutral=True,neutral_limit=5,previous=previous,resume=True)
+        self.assertEqual(code,0,result.get('error'))
+        self.assertIn('BNEUTRAL 1 2.5e-05 0.1 5',device.commands)
+        self.assertNotIn('BNEUTRAL 0',device.commands)
+
+    def test_resume_changed_device_or_settings_never_arms(self):
+        _,previous,_=self.run_trial(saved=True,neutral=True)
+        for change in ({'Cal':'0'},{'NPit':'24.8'},{'Map1':'2'},{'NTune':'3'}):
+            device,result,code=self.run_trial(saved=True,neutral=True,previous=previous,resume=True,mutate=change)
+            self.assertEqual(code,2)
+            self.assertNotIn('BSTART 2',device.commands)
+        device,_,code=self.run_trial(saved=True,neutral=True,previous=previous,resume=True,neutral_limit=5)
+        self.assertEqual(code,2)
+        self.assertNotIn('BSTART 2',device.commands)
+
+    def test_seed_old_run_into_five_degrees_preserves_base(self):
+        _,previous,_=self.run_trial(saved=True,neutral=True)
+        device,result,code=self.run_trial(fault='new_neutral',saved=True,neutral=True,previous=previous,seed=True,neutral_limit=5)
+        self.assertEqual(code,0,result.get('error'))
+        self.assertIn('BNEUTRAL 1 2.5e-05 0.1 5 23.800000 46.500000',device.commands)
+        self.assertEqual(result['reference'],previous['reference'])
+        self.assertIn('seeded_from',result)
+        device,_,code=self.run_trial(fault='new_neutral',saved=True,neutral=True,previous=previous,seed=True,neutral_limit=5,mutate={'Map1':'2'})
+        self.assertEqual(code,2)
+        self.assertNotIn('BSTART 2',device.commands)
+        previous['last_state']['NPit']='40'
+        device,result,code=self.run_trial(fault='new_neutral',saved=True,neutral=True,previous=previous,seed=True,neutral_limit=5)
+        self.assertEqual(code,2)
+        self.assertNotIn('BSTART 2',device.commands)
 
     def test_prepare_never_arms(self):
         device, result, code = self.run_trial(prepare=True)

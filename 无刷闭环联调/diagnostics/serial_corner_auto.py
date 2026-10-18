@@ -309,7 +309,7 @@ try:
     confirm(lambda d: d.get('Aligned') == '111' and d.get('Cal') == '1'
             and d.get('IMU') == '1' and d.get('EN') == '000' and d.get('Fault') == '0',
             'Three alignments/static IMU calibration')
-    if state.get('NTune') in ('1','2'):
+    if state.get('NTune') in ('1','2','3'):
         command('BNEUTRAL 0')
         confirm(lambda d: d.get('NOn') == '0', 'Neutral search disabled for baseline auto')
     if state.get('CornerStart') != '1' or state.get('YawTune') != '1':

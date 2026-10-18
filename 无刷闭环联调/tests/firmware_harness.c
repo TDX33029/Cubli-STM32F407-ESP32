@@ -445,6 +445,50 @@ static void test_neutral_search(void) {
  setup_neutral();command("BAL 0");command("BDIR 1 1 1");assert(!cubli_bal.neutral_enabled);
  setup_neutral();command("BAL 0");LQR_InvalidateMotorCalibration(0);assert(!cubli_bal.neutral_enabled);
 }
+static void test_neutral_five_degree_seed(void) {
+ int i;float saved[3],before[3],axis[3],fallen[3],step[3],n;
+ const float *base;
+ setup_neutral();command("BAL 0");
+ assert(cubli_bal.neutral_limit_deg==2);
+ command("BNEUTRAL 1 .00025 .5 5");assert(cubli_bal.neutral_limit_deg==5);
+ command("BNEUTRAL 1 .00025 .5 5.01");assert(cubli_bal.neutral_limit_deg==5);
+ command("BNEUTRAL 1 .00025 .5 1.99");assert(cubli_bal.neutral_limit_deg==5);
+ /* Serial seed uses the original fixed reference, not a new safety anchor. */
+ base=cubli_bal.reference[3];memcpy(saved,base,sizeof(saved));
+ command("BNEUTRAL 1 .00025 .5 5 31.39 50.38");
+ assert(cubli_bal.neutral_enabled&&norm3(cubli_bal.neutral_rotation)>2*DEG_TO_RAD);
+ assert(memcmp(saved,base,sizeof(saved))==0);
+ assert(fabsf(norm3(LQR_GetControlReference())-1)<1e-6f);
+ memcpy(before,LQR_GetControlReference(),sizeof(before));
+ command("BNEUTRAL 1 .00025 .5 2");assert(cubli_bal.neutral_limit_deg==5);
+ assert(memcmp(before,LQR_GetControlReference(),sizeof(before))==0);
+ /* Seed log/exp convention must retain its direction on the first update. */
+ command("BSTART 2");
+ for(i=0;i<850;i++) {advance();gravity(before[0],before[1],before[2]);shaft_velocity[0]=shaft_velocity[1]=shaft_velocity[2]=0;LQR_Balance_Loop();}
+ assert(cubli_bal.state==BAL_STATE_BALANCING);
+ neutral_tick(0,0,0);
+ for(i=0;i<3;i++) assert(fabsf(LQR_GetControlReference()[i]-before[i])<1e-6f);
+ command("BNEUTRAL 1 .00001 .05 2");assert(cubli_bal.neutral_limit_deg==5);
+ assert(!LQR_SeedNeutralReference(saved)); /* active seed is rejected */
+ for(i=0;i<3000;i++) {
+  memcpy(before,cubli_bal.neutral_rotation,sizeof(before));neutral_tick(200,0,0);
+  for(int j=0;j<3;j++) step[j]=cubli_bal.neutral_rotation[j]-before[j];
+  assert(norm3(step)<=.5f*DEG_TO_RAD*.005f+1e-7f);
+  assert(norm3(cubli_bal.neutral_rotation)<=5*DEG_TO_RAD+1e-7f);
+ }
+ assert(fabsf(norm3(cubli_bal.neutral_rotation)-5*DEG_TO_RAD)<1e-6f);
+ /* Base20deg fall guard still applies even with a5deg control offset. */
+ n=norm3(cubli_bal.neutral_rotation);
+ for(i=0;i<3;i++) axis[i]=cubli_bal.neutral_rotation[i]/n;
+ cross3(base,axis,fallen);
+ for(i=0;i<3;i++) fallen[i]=base[i]*cosf(21*DEG_TO_RAD)+fallen[i]*sinf(21*DEG_TO_RAD);
+ advance();gravity(fallen[0],fallen[1],fallen[2]);LQR_Balance_Loop();
+ assert(cubli_bal.stop_reason==BAL_STOP_ANGLE&&!m1_enabled);
+ command("BAL 0");
+ command("BNEUTRAL 1 .00025 .5 5 60 60");
+ assert(!cubli_bal.neutral_enabled&&norm3(cubli_bal.neutral_rotation)==0);
+ command("BNEUTRAL 1 .00025 .5");assert(cubli_bal.neutral_limit_deg==2);
+}
 static float observer_pivot_rms(float tau) {
  int i,count=0;float error2=0;
  const float initial[3]={-.693037404f,.417914491f,.587406703f};
@@ -493,6 +537,7 @@ int main(void) {
  test_corner_immediate_feedback();
  test_corner_tight_entry();
  test_neutral_search();
+ test_neutral_five_degree_seed();
  test_observer_tuning();
  setup();command("DBG 2");command("EN1 1");command("EN2 1");command("EN3 1");assert(m1_enabled&&m2_enabled&&m3_enabled);
  command("M1 20");command("M2 -30");command("M3 40");assert(target_m1==20&&target_m2==-30&&target_m3==40);
