@@ -1,0 +1,30 @@
+-------------------------------------------------------------------
+                       STM32CubeProgrammer v2.21.0
+      -------------------------------------------------------------------
+
+ST-LINK SN  : 190A071F7116303030303032
+ST-LINK FW  : V2J46S7
+Board       : --
+Voltage     : 3.18V
+SWD freq    : 4000 KHz
+Connect mode: Hot Plug
+Reset mode  : Software reset
+Device ID   : 0x413
+Revision ID : Rev 2.0
+Device name : STM32F405xx/F407xx/F415xx/F417xx
+Flash size  : 1 MBytes
+Device type : MCU
+Device CPU  : Cortex-M4
+BL Version  : 0x31
+
+
+UPLOADING ...
+  File          : D:\Document\tempPrj\Cubli-F407ZGT6\无刷闭环联调\diagnostics\2026-10-18\initial_flash_readback.bin
+  Size          : 65536 Bytes
+  Address:      : 0x8000000
+Read progress:
+�������������������������������������������������� 0%
+�������������������������������������������������� 100%
+
+Data read successfully
+Time elapsed during read operation is: 00:00:00.470

@@ -1,0 +1,14 @@
+{"t": 0.0, "kind": "tx", "data": "PING"}
+{"t": 0.0, "kind": "tx", "data": "STOP"}
+{"t": 0.0, "kind": "tx", "data": "FAST 0"}
+{"t": 0.0, "kind": "tx", "data": "TELE 1"}
+{"t": 0.0, "kind": "tx", "data": "STATE?"}
+{"t": 0.0459999999984575, "kind": "rx", "data": "\ufffd\ufffd\ufffd)\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd000,EN:000,Fault:0,Trip:0,Tilt:0.56,PoseTilt:1.00,Angle:-0.56,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.004,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}
+{"t": 0.0459999999984575, "kind": "rx", "data": "ERR SAFETY_TRIP:1"}
+{"t": 0.0459999999984575, "kind": "rx", "data": "OK FAST:0"}
+{"t": 0.0459999999984575, "kind": "rx", "data": "OK TELE:1"}
+{"t": 0.062000000001717126, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:0.50,A2:6.28,A3:3.68,Gx:0.2,Gy:-0.2,Gz:0.1,Ax:-0.02,Ay:-0.01,Az:1.01,H1:28.6,H2:359.6,H3:210.7,S1:0.00,S2:0.00,S3:0.00,Pit:-0.57,Rol:0.83,Bal:0#"}
+{"t": 0.0930000000007567, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:0.50,A2:6.28,A3:3.68,Gx:0.2,Gy:-0.2,Gz:0.2,Ax:-0.01,Ay:-0.01,Az:1.01,H1:28.6,H2:359.6,H3:210.7,S1:0.00,S2:0.00,S3:0.00,Pit:-0.56,Rol:0.83,Bal:0#"}
+{"t": 0.125, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:0.50,A2:6.28,A3:3.68,Gx:0.3,Gy:-0.2,Gz:0.1,Ax:-0.02,Ay:-0.01,Az:1.01,H1:28.6,H2:359.6,H3:210.7,S1:0.00,S2:0.00,S3:0.00,Pit:-0.56,Rol:0.83,Bal:0#"}
+{"t": 0.1709999999984575, "kind": "rx", "data": "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:5.00,EN:000,A1:0.50,A2:6.28,A3:3.68,Gx:0.4,Gy:-0.1,Gz:0.1,Ax:-0.02,Ay:-0.01,Az:1.01,H1:28.6,H2:359.6,H3:210.7,S1:0.00,S2:0.00,S3:0.00,Pit:-0.56,Rol:0.83,Bal:0#"}
+{"t": 0.23400000000037835, "kind": "rx", "data": "$STATE,App:0,Dbg:1,Mode:1,BMode:1,Bal:0,Cal:0,IMU:1,Aligned:000,EN:000,Fault:0,Trip:1,Tilt:0.56,PoseTilt:1.00,Angle:-0.56,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.006,YawD:3.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,U1:0.00,U2:0.00,U3:0.00,D1:1,D2:1,D3:1,Enc:111,VLimit:5.00,SLimit:180.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:1,Map2:2,Map3:3,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:1,Axis2:2,Axis3:3,AxesOK:0,DirOK:0,AxisMask:0,DirMask:0,CountMs:0,CornerStart:1#"}

@@ -1,0 +1,71 @@
+{
+  "readback_sha256": "a4ac876b7d7123c3acbd5530ce9948e3db75ea79d68b808a1c22d6aef1426016",
+  "readback_size": 65536,
+  "matched_images": [
+    "Cubli-ST\\MDK-ARM\\CubeMX\\CubeMX.hex",
+    "Cubli-ST\\MDK-ARM\\CubeMX-corner-entry2s\\CubeMX.hex"
+  ],
+  "comparisons": [
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX\\CubeMX.hex",
+      "matches_data_bytes": true,
+      "data_bytes": 49940
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-entry2s\\CubeMX.hex",
+      "matches_data_bytes": true,
+      "data_bytes": 49940
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-immediate\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 50060
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-neutral\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 52052
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-neutral-slow\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 52228
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-observer\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 52524
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-reviewed\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 49792
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-corner-yaw-settle\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 49324
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-edge-auto\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 48768
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-edge-impulse120\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 47408
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-motor-diagnostics\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 43700
+    },
+    {
+      "path": "Cubli-ST\\MDK-ARM\\CubeMX-quad\\CubeMX.hex",
+      "matches_data_bytes": false,
+      "data_bytes": 48448
+    }
+  ],
+  "method": "Read-only SWD HOTPLUG flash upload; compare every addressed HEX data byte without assuming unused flash contents"
+}
