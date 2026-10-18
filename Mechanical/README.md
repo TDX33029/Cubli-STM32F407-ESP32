@@ -1,0 +1,9 @@
+[🇨🇳 简体中文](README.md) | [🇬🇧 English](README_EN.md)
+
+工程用到的所有3D以及2D资源 包括测试结构件与正式结构件
+
+目录结构
+
+3D/ 主框架 主板支撑架 法兰等SolidWorks绘制的主体结构结构文件以及住邦仿真3D文件与总成装配体
+2D/ 动量轮飞轮AutoCAD文件以及下单参数
+STL/ 可供3D打印机直接使用的切片文件 包含所有必要结构 打印机参数设定应为0.2mm硬化钢喷嘴 PLA材质 打印参数为0.08mm High Quality @BBL A1 0.2 nozzle
