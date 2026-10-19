@@ -30,7 +30,7 @@ This project is a complete open-source implementation of the Cubli balancing con
 
 ### Balancing Controller Demo
 
-https://github.com/user-attachments/assets/2c3d52b1-5e99-43fa-8d38-f5f9dfa2442f
+https://github.com/user-attachments/assets/ebfe2009-a91b-4555-8b46-bfa3d13127df
 
 ### PCB Rendering & Layout
 
