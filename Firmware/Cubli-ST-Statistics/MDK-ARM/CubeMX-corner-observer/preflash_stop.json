@@ -1,0 +1,11 @@
+{
+  "confirmed_disabled": true,
+  "lines": [
+    ",M2:0.00,M3:0.00,Vq:2.50,EN:000,A1:1.64,A2:-7.40,A3:11.82,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.01,Az:0.01,H1:93.8,H2:295.9,H3:317.1,S1:0.00,S2:0.00,S3:0.00,Pit:0.50,Rol:89.36,Bal:0#",
+    "OK FAST:0",
+    "OK TELE:1",
+    "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:2.50,EN:000,A1:1.64,A2:-7.40,A3:11.82,Gx:0.4,Gy:-0.4,Gz:0.3,Ax:-1.01,Ay:0.01,Az:0.01,H1:93.8,H2:295.9,H3:317.1,S1:0.00,S2:0.00,S3:0.00,Pit:0.51,Rol:89.36,Bal:0#",
+    "$TELE,M1:0.00,M2:0.00,M3:0.00,Vq:2.50,EN:000,A1:1.64,A2:-7.40,A3:11.82,Gx:0.4,Gy:-0.2,Gz:0.2,Ax:-1.01,Ay:0.01,Az:0.01,H1:93.8,H2:295.9,H3:317.1,S1:0.00,S2:0.00,S3:0.00,Pit:0.50,Rol:89.36,Bal:0#",
+    "$STATE,App:1,Dbg:3,Mode:1,BMode:3,Bal:0,Cal:1,IMU:1,Aligned:111,EN:000,Fault:0,Trip:1,Tilt:1.51,PoseTilt:179.19,Angle:1.51,TripDeg:20.0,CapDeg:10.00,Auto:0,BReason:0,FullSpeed:250.0,FullMs:0,RetryMs:0,EdgeReady:0,Wheel:0.00,Rate:0.004,YawD:0.00,YawTune:1,Trim1:0.000,Trim2:0.000,Trim3:0.000,BTrim:0.0,TrimTune:1,NTune:2,NOn:0,U1:0.00,U2:0.00,U3:0.00,D1:-1,D2:-1,D3:-1,Enc:111,VLimit:2.50,SLimit:15.00,EncType:0,C1:16384,C2:16384,C3:16384,Map1:3,Map2:1,Map3:2,PP1:7,PP2:7,PP3:7,Dir1:1,Dir2:1,Dir3:1,Ref:0,Axis1:2,Axis2:3,Axis3:1,AxesOK:1,DirOK:1,AxisMask:7,DirMask:7,CountMs:0,CornerStart:1#"
+  ]
+}

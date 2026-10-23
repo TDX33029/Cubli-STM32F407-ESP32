@@ -1,0 +1,19 @@
+{
+  "date_local": "2026-10-16",
+  "encoder": "I2C absolute",
+  "change": "Corner uses full wheel feedback from first balancing loop; all three wheels must be valid/aligned and below5rad/s throughout entry/countdown/handover. Existing edge handover ramp retained.",
+  "hex_sha256": "a0f7e60a18407babbfa501e97dcffb76aa9c967ab37d4bb0ed8e86021c7d4ada",
+  "hex_data_bytes": 50060,
+  "build_inputs": 38,
+  "armcc_errors": 0,
+  "armcc_warnings": 0,
+  "tests": [
+    "Production C control harness, including immediate-feedback and wheel-entry regression",
+    "UART safety/transport harness"
+  ],
+  "flashed": true,
+  "flash_verification": "Download verified successfully",
+  "balance_validation": "Completed3s with user-reported restoring action/balance; max tilt3.221deg; longer validation pending",
+  "source_file_sha256": "77900044f44cbfc3ba741bbd99f68d1fd81a6a78503d0c63b7ebe4bde3cd32a0",
+  "postflash_alignment_and_calibration": "Aligned111 Cal1 EN000 Fault0"
+}

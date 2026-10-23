@@ -1,0 +1,20 @@
+{
+  "date_local": "2026-10-16",
+  "encoder": "I2C absolute",
+  "change": "Opt-in bounded neutral reference search; excludes yaw wheel spin; 2deg total, 0.5deg/s; fast inner controller and base-reference protections retained.",
+  "hex_sha256": "3248db58ec10fbced736e1751b2bf177c60afa462b541a53328433e4971e10a6",
+  "hex_data_bytes": 52052,
+  "build_inputs": 38,
+  "armcc_errors": 0,
+  "armcc_warnings": 0,
+  "tests": [
+    "Production C control and UART harness",
+    "35 corner diagnostic tests",
+    "10 persistent pose monitor tests"
+  ],
+  "flashed": true,
+  "balance_validation": "First neutral trial failed at4.36s on body-rate guard1.645rad/s; target moved1.47deg; M3 reached-200rad/s and-6V; final EN000. No long-run success.",
+  "source_file_sha256": "058c269bbf7fdf520228b4e19a0d68a777e9eec91bb9e2b374be3ca4434333a6",
+  "flash_verification": "Download verified successfully; software reset performed",
+  "postflash_alignment_and_calibration": "Aligned111 Cal1 IMU1 EN000 Fault0 Enc111; M1/2/3 map3/1/2 and7 pole pairs; all encoder signs+1"
+}

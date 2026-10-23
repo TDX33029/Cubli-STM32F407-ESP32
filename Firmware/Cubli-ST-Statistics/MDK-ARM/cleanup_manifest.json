@@ -1,0 +1,1055 @@
+{
+  "date": "2026-10-15",
+  "scope": "Cubli-ST/MDK-ARM only; no firmware source changes or device access",
+  "git_commit_before_cleanup": "6bb714b68091105223958fbbf14ee59556eb8d05",
+  "before": {
+    "file_count": 1941,
+    "bytes": 1542331782
+  },
+  "after_excluding_this_manifest": {
+    "file_count": 42,
+    "bytes": 4275128
+  },
+  "original_files_removed": 1902,
+  "original_file_bytes_removed": 1539292176,
+  "retained_builds": [
+    {
+      "directory": "CubeMX",
+      "reason": "Current I2C source build and default Keil debug output; exact HEX match to deployed entry2s image",
+      "files": [
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.axf",
+          "bytes": 1030316,
+          "sha256": "27f260970c15d4520ae06d02bebcd45366abb49059f442ed0c51835c66a95935"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 140517,
+          "sha256": "8d3800e442928edd8708c7e19a85f0d57dcf4c282886c4364263161107270187"
+        },
+        {
+          "name": "CubeMX.htm",
+          "bytes": 171528,
+          "sha256": "6e60806e05bd1ae72b2a8114eb7dcc81ffe23d7abf42d26d4167afc2066ca3ac"
+        },
+        {
+          "name": "CubeMX.lnp",
+          "bytes": 1279,
+          "sha256": "3182333f6278f1f3b17a55e842aeebe6d1dfdacdbda79081923eed87d0cacdc3"
+        },
+        {
+          "name": "CubeMX.map",
+          "bytes": 341900,
+          "sha256": "9cbf54b8f487577db0ade21700f300b628ad933d169a42fe76d40bebea312948"
+        },
+        {
+          "name": "CubeMX.sct",
+          "bytes": 555,
+          "sha256": "5d3189b3e1f31de54d15a8256d8fa5a1b6f3cde24e07645ba464bdf8a060e369"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-quad",
+      "reason": "Current QUAD source build, compile verified only; not physically validated",
+      "files": [
+        {
+          "name": "build_config.json",
+          "bytes": 310,
+          "sha256": "7b495494b5cf84e90e8378e229dbea5efda8a51ccfa4c384f2aa43df514ee37d"
+        },
+        {
+          "name": "CubeMX.axf",
+          "bytes": 1022064,
+          "sha256": "e092e29f7c6642f460b0f753bd4b9e8dafd9712d74f4269d1ccb7f1819462400"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 136311,
+          "sha256": "641a8d42ffc55531f3300b2f40b121548184958e6e487b1a44dbde7af909f0f0"
+        },
+        {
+          "name": "CubeMX.htm",
+          "bytes": 168393,
+          "sha256": "71b877ade37dcab75cdec68ded0fc5686cc4a90c939901aa59521964a86ed9d5"
+        },
+        {
+          "name": "CubeMX.map",
+          "bytes": 341388,
+          "sha256": "a7f7175bd26d7b19aa4b4b9afbeb21a5d961c534f0e2b850b1d77ede1090c4b9"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-corner-entry2s",
+      "reason": "Current deployed two-second/half-degree entry firmware and SWD verification evidence",
+      "files": [
+        {
+          "name": ".gitignore",
+          "bytes": 91,
+          "sha256": "6a948b579b4e5ea33b6569b3f1a74337b425ac6f931c70743953122e459b71f3"
+        },
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 140517,
+          "sha256": "8d3800e442928edd8708c7e19a85f0d57dcf4c282886c4364263161107270187"
+        },
+        {
+          "name": "flash_verify.log",
+          "bytes": 1680,
+          "sha256": "1b67d19f5f7a6ec25aa4c83bdfc1686e708c7738cfe0a354bca10c11f2194275"
+        },
+        {
+          "name": "review_manifest.json",
+          "bytes": 2290,
+          "sha256": "ff3b9bba4418f69512fb3f54776a063b309f123e1cdfc380cf8b2367a386b507"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-corner-reviewed",
+      "reason": "Operator-confirmed five-second autonomous corner balance after review",
+      "files": [
+        {
+          "name": ".gitignore",
+          "bytes": 91,
+          "sha256": "6a948b579b4e5ea33b6569b3f1a74337b425ac6f931c70743953122e459b71f3"
+        },
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 140091,
+          "sha256": "f9d2aa9054d108078434529e59e12456b3312bfc4d9e988470438126f6451a97"
+        },
+        {
+          "name": "flash_verify.log",
+          "bytes": 1682,
+          "sha256": "64cb06cb28aedbe1fb05c80e476b2005fe21527d962fd39f34f07cb90e8c65f5"
+        },
+        {
+          "name": "review_manifest.json",
+          "bytes": 2057,
+          "sha256": "a0c90c2f40058bce623a03626329e958a27eda4e999ffd4495459c31b2679fb4"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-corner-yaw-settle",
+      "reason": "Original operator-confirmed three/five-second autonomous corner balance baseline",
+      "files": [
+        {
+          "name": ".gitignore",
+          "bytes": 56,
+          "sha256": "41ee6215743add73ed9971a778acb5876750398dbba75410123c5c36f53283bd"
+        },
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 138778,
+          "sha256": "5e7c2fbfcff1dc29397cb76c45f6936a01a81a6d6611b756f603800b147c6f9e"
+        },
+        {
+          "name": "flash.log",
+          "bytes": 1745,
+          "sha256": "7f2a069656d156b2651a42dff605a46f3f3298341b29066bbb938976da3c1ca8"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-edge-auto",
+      "reason": "Hardware-confirmed M1 edge automatic balance/retry baseline",
+      "files": [
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 137211,
+          "sha256": "69eece089d77b56013f499f27aa3717efba8f9668b1e8c9a49a1f4bebdcf9704"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-edge-impulse120",
+      "reason": "Original confirmed five-second edge balance and bounded torque probe baseline",
+      "files": [
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 133386,
+          "sha256": "d15c18e956b614fe08c43fa59a55ebf94184aca4a0ea3eabdba0d67af61862c4"
+        }
+      ]
+    },
+    {
+      "directory": "CubeMX-motor-diagnostics",
+      "reason": "Hardware-confirmed M1/M3 speed reversal and high-speed tuning baseline",
+      "files": [
+        {
+          "name": "build_config.json",
+          "bytes": 309,
+          "sha256": "991a867699ea5da742fae7fa0390c25cc5977f64a0c76631df0b139acc703c0b"
+        },
+        {
+          "name": "CubeMX.hex",
+          "bytes": 122967,
+          "sha256": "7d78e5df1e7bc00cf7e59e747c216a8bac6d0ca11d639fca0db6106a51524b3d"
+        }
+      ]
+    }
+  ],
+  "removed_builds": [
+    {
+      "directory": "CubeMX-align-2v8",
+      "files": 45,
+      "bytes": 36697437,
+      "hex_sha256": "11973bb64fb2e4e331b1b41c3b1b1014c8c6a6e11482e2d33ff84612f2ddf47e",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-align-diag",
+      "files": 45,
+      "bytes": 36694380,
+      "hex_sha256": "c286d80b076b5b5101739f10cfa3283597386f4446aeae34d275bef9cf29e313",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-align-reasons",
+      "files": 45,
+      "bytes": 36697893,
+      "hex_sha256": "42b59182df2d136a7a7a042f64f3a5f3dee897520d3ac2f41518b914ecef98bc",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-auto-map",
+      "files": 45,
+      "bytes": 36718887,
+      "hex_sha256": "f9d74b7c6d66fdc89727cdd6ec5d97e12365cb729bfbd2928ae0160d1d6e8d9e",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-corner-auto",
+      "files": 46,
+      "bytes": 36897201,
+      "hex_sha256": "68249f325ab6cbab696662b899d316f04906857e81b7d8b4bd5bad3f4eeb5681",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-corner-countdown",
+      "files": 46,
+      "bytes": 36890727,
+      "hex_sha256": "0da81d5bbf06329f1d5a777dad21c8a01c1a034e0442a6fde8e69b4f47dbeca0",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-corner-trim",
+      "files": 47,
+      "bytes": 36903470,
+      "hex_sha256": "02d70283fedd5db2ea3bdf579f2c46af92a727286cd4ec71902453f76dcd8e20",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-corner-yaw",
+      "files": 46,
+      "bytes": 36890669,
+      "hex_sha256": "a245c51bc77429c86585aa7c9d3b37db6696fd29d8c071b84190e3d4ae326b0d",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-auto-quad",
+      "files": 44,
+      "bytes": 36869057,
+      "hex_sha256": "d144ea299e2af8462783af2885d78a0f7885aaafc19da5be6665d959fcd86a43",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-countdown",
+      "files": 44,
+      "bytes": 36829609,
+      "hex_sha256": "65134d11d583f814735ae932cb1d3a484d6388982b99cf508ad8e4aa7d2f9643",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-fixture60",
+      "files": 44,
+      "bytes": 36852194,
+      "hex_sha256": "1ee14408952877b6f99c4c11ce7447757b75cd22edfc5e1fd79be20f0b14900c",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-fixture60-quad",
+      "files": 44,
+      "bytes": 36839419,
+      "hex_sha256": "b61236426dd75f7dd716d2256a946338b3a9363a675e7d5ab4a948f26086bcea",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-handover",
+      "files": 44,
+      "bytes": 36852129,
+      "hex_sha256": "ac37386984ef1794e44c43449655fcb75817199674fe930ab34578f0f285bf95",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-handover-quad",
+      "files": 44,
+      "bytes": 36839214,
+      "hex_sha256": "d14b7593df075f677fabefeb75899e33f0cb09c80e31b634fa02a3001f3b4263",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-impulse120-quad",
+      "files": 44,
+      "bytes": 36839960,
+      "hex_sha256": "846b5695a8add531e3d3ac392cab5179e23f14fd1092ac40105a3bad025e6b97",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-impulse6v",
+      "files": 44,
+      "bytes": 36852368,
+      "hex_sha256": "e0320ddaa52abdee9a5f5b04c1c34dab1795d4332a7dfdda0efeb252ac753b74",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-impulse6v-quad",
+      "files": 44,
+      "bytes": 36839561,
+      "hex_sha256": "ccde1ad63401555dd7ca19ee2ed224633bb6476bf9597ef30147525c4c8905c7",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-torque-probe",
+      "files": 44,
+      "bytes": 36846224,
+      "hex_sha256": "4221ec80152f9bfd4683c95f5058654042b14ec3c90a19ece0c929157960e782",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-torque-probe-quad",
+      "files": 44,
+      "bytes": 36833309,
+      "hex_sha256": "acbafcd1480cb29c7ce0cbcf0b6acb7a50d130371367cb2d16da4705f11d05c0",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-trip20",
+      "files": 44,
+      "bytes": 36849054,
+      "hex_sha256": "f3de558cf0ec3c41bfefc63bfcd350ec9dc0c51042db2956c3971af15b186d2f",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-trip20-quad",
+      "files": 44,
+      "bytes": 36836123,
+      "hex_sha256": "e6338b83946d8b1b25624a990050a6e44d93bfdb2a260fe9e0b8ea7c4ec9ac65",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-waitpose",
+      "files": 44,
+      "bytes": 36831430,
+      "hex_sha256": "538d9b37d9d3b47c75aefc190a0fd54a6e1f7894915994851cbea939c889a78a",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-waitpose-quad",
+      "files": 44,
+      "bytes": 36818464,
+      "hex_sha256": "6891d3594f226ab354b3524e7a8da5a9edf175f9ca69ebe52e6a945fc10baa4c",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-waitpose-wide",
+      "files": 44,
+      "bytes": 36833611,
+      "hex_sha256": "7f8512017461b70a380b9c7a1189c38d10442973f83eada9f1780820f0f49f1e",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-waitpose-wide-quad",
+      "files": 44,
+      "bytes": 36820854,
+      "hex_sha256": "aaa1eb27cdbcf82f14c6ab46fb8d7f0649b5bb545a64cca1fa17785f731bfef7",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-wheel300",
+      "files": 44,
+      "bytes": 36852311,
+      "hex_sha256": "205bc2b0b0035e5b9babe4213b80ecf4f2fc95451819b758d09bacaf544951d9",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-edge-wheel300-quad",
+      "files": 44,
+      "bytes": 36839388,
+      "hex_sha256": "56d0d589d78678c9a1f0d7e1666e48e8560f538b8ba49a9c78c92437d8543850",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-map-align35",
+      "files": 45,
+      "bytes": 36719309,
+      "hex_sha256": "cdcf691d85ed3da82882f875656059ae9afa74fe132be9d8bf78403529f6d314",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-map-static",
+      "files": 45,
+      "bytes": 36711275,
+      "hex_sha256": "ef50580c24445515d0be4a67197de1ab3801a8a427566c0ce891802aff47e6b7",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-motor-diagnostics-quad",
+      "files": 44,
+      "bytes": 36780182,
+      "hex_sha256": "a58c77e681dc79b4732b2b3d94192ab6f555a09744571c8203a3f06866114633",
+      "build_config": {
+        "encoder_override": "quad",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=1"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-threeaxis-speed",
+      "files": 44,
+      "bytes": 36712929,
+      "hex_sha256": "3f51001c89256c7f5680da6e29368efb584db40eb5c5bc9b5dd983aaacb03d5b",
+      "build_config": {
+        "encoder_override": null,
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-usart2-check",
+      "files": 45,
+      "bytes": 36712863,
+      "hex_sha256": "8443d5c0cf6324ba890e4f1bf916c1664025f07f82177b0a8d162421405b88bc",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    },
+    {
+      "directory": "CubeMX-usart2-verify",
+      "files": 45,
+      "bytes": 36694688,
+      "hex_sha256": "8443d5c0cf6324ba890e4f1bf916c1664025f07f82177b0a8d162421405b88bc",
+      "build_config": {
+        "encoder_override": "i2c",
+        "ppr_override": null,
+        "axis_ppr_overrides": [
+          null,
+          null,
+          null
+        ],
+        "defines": [
+          "-D__UVISION_VERSION=542",
+          "-D_RTE_",
+          "-DSTM32F407xx",
+          "-DUSE_HAL_DRIVER",
+          "-DENC_USE_HW_QUAD=0"
+        ],
+        "input_count": 38,
+        "warnings": 0
+      }
+    }
+  ],
+  "verification": {
+    "i2c_inputs": 38,
+    "i2c_errors": 0,
+    "i2c_warnings": 0,
+    "quad_inputs": 38,
+    "quad_errors": 0,
+    "quad_warnings": 0,
+    "default_i2c_matches_deployed_entry2s": true,
+    "archived_hex_and_configuration_hashes_unchanged": true,
+    "link_template_and_scatter_preserved": true,
+    "intermediate_objects_removed_after_verification": true,
+    "device_flashed": false,
+    "hardware_testing_resumed": false
+  },
+  "removed_root_files": [
+    "CubeMX-align-2v8.uvoptx",
+    "CubeMX-align-2v8.uvprojx",
+    "CubeMX-align-diag.uvoptx",
+    "CubeMX-align-diag.uvprojx",
+    "CubeMX-align-reasons.uvoptx",
+    "CubeMX-align-reasons.uvprojx",
+    "CubeMX-auto-map.uvoptx",
+    "CubeMX-auto-map.uvprojx",
+    "CubeMX-map-align35.uvoptx",
+    "CubeMX-map-align35.uvprojx",
+    "CubeMX-map-static.uvoptx",
+    "CubeMX-map-static.uvprojx",
+    "CubeMX.uvguix.Lenovo",
+    "CubeMX.uvguix.Samii Verpas",
+    "CubeMX.uvguix.TDX33029",
+    "CubeMX.uvguix.Tyler Xander",
+    "build_after_usart_fix.log",
+    "build_result.log",
+    "rebuild_after_cubemx_usart_fix.log",
+    "rebuild_after_warning_fix.log",
+    "startup_stm32f407xx.lst"
+  ]
+}

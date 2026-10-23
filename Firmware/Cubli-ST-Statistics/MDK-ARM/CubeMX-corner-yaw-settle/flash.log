@@ -1,0 +1,58 @@
+      -------------------------------------------------------------------
+                       STM32CubeProgrammer v2.21.0
+      -------------------------------------------------------------------
+
+ST-LINK SN  : 190A071F7116303030303032
+ST-LINK FW  : V2J46S7
+Board       : --
+Voltage     : 3.18V
+SWD freq    : 4000 KHz
+Connect mode: Under Reset
+Reset mode  : Hardware reset
+Device ID   : 0x413
+Revision ID : Rev 2.0
+Device name : STM32F405xx/F407xx/F415xx/F417xx
+Flash size  : 1 MBytes
+Device type : MCU
+Device CPU  : Cortex-M4
+BL Version  : 0x31
+
+
+
+Opening and parsing file: corner-yaw-settle.hex
+
+
+Memory Programming ...
+  File          : corner-yaw-settle.hex
+  Size          : 48.17 KB
+  Address       : 0x08000000
+
+
+Erasing memory corresponding to segment 0:
+Erasing internal memory sectors [0 3]
+Download in Progress:
+�������������������������������������������������� 0%
+�������������������������������������������������� 100%
+
+File download complete
+Time elapsed during download operation: 00:00:01.587
+
+
+
+Verifying...
+
+
+Read progress:
+�������������������������������������������������� 50%
+�������������������������������������������������� 100%
+
+Time elapsed during verifying operation: 00:00:00.333
+
+
+Download verified successfully
+
+
+
+MCU Reset
+
+Software reset is performed

@@ -1,0 +1,5 @@
+*
+!.gitignore
+!CubeMX.hex
+!build_config.json
+!flash.log

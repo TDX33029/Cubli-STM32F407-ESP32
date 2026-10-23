@@ -1,0 +1,18 @@
+{
+  "encoder_override": "quad",
+  "ppr_override": null,
+  "axis_ppr_overrides": [
+    null,
+    null,
+    null
+  ],
+  "defines": [
+    "-D__UVISION_VERSION=542",
+    "-D_RTE_",
+    "-DSTM32F407xx",
+    "-DUSE_HAL_DRIVER",
+    "-DENC_USE_HW_QUAD=1"
+  ],
+  "input_count": 38,
+  "warnings": 0
+}

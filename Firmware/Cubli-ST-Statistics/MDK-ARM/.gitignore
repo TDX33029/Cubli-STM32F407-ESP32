@@ -1,0 +1,18 @@
+# Reproducible compiler/assembler intermediates and local IDE layout caches.
+*.o
+*.d
+*.crf
+*.dep
+*.lst
+*.bak
+*.Bak
+*.uvguix.*
+build_firmware.lnp
+
+# Keep the default CubeMX.lnp and CubeMX.sct: build_firmware.py reads them.
+
+# Keil build outputs (regenerable by build_firmware.py / uVision)
+*.axf
+*.hex
+*.htm
+*.map
