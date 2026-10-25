@@ -88,6 +88,13 @@ static uint8_t app_mode=0, debug_motor=1, diagnostic_busy=0, fast_mask=0;
 static volatile uint8_t safety_trip=0;
 static volatile uint32_t last_ping_ms=0;
 static uint32_t main_alive_ms=0;
+/* A balance session armed by BSTART/BAUTO runs standalone: the UART heartbeat
+   is still required to arm a session (and in debug mode), but once the
+   countdown is accepted it must complete with the cable unplugged. While the
+   latch is set the heartbeat checks are skipped; encoder freshness, main-loop
+   liveness, fault pins and safety_trip remain enforced. The latch ends with
+   the session: any return to DISABLED or a FALL_PROTECT trip. */
+static volatile uint8_t balance_standalone=0;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -253,6 +260,8 @@ int main(void)
 				/* 5ms (200Hz) 高频平衡与姿态控制任务: IMU数据采集、卡尔曼滤波姿态解算与LQR控制循环 */
 				uint32_t cur_tick = HAL_GetTick();
                 main_alive_ms=cur_tick;
+                if(balance_standalone && (cubli_bal.state==BAL_STATE_DISABLED ||
+                                          cubli_bal.state==BAL_STATE_FALL_PROTECT)) balance_standalone=0;
                 /* PG5 countdown, PG6 running, PG7 fall/fault, PG8 ready. */
                 {
                     uint32_t pins=GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8,on=0;
@@ -267,7 +276,8 @@ int main(void)
                        (cubli_bal.auto_enabled && cubli_bal.stop_reason!=BAL_STOP_NONE)) on|=GPIO_PIN_7;
                     if(app_mode && !safety_trip && cubli_bal.state!=BAL_STATE_FALL_PROTECT &&
                        LQR_AxesConfirmed() && LQR_DirectionsConfirmed() &&
-                       aligned && cubli_bal.reference_valid[m] && cur_tick-last_ping_ms<=1500U &&
+                       aligned && cubli_bal.reference_valid[m] &&
+                       (balance_standalone || cur_tick-last_ping_ms<=1500U) &&
                        cubli_bal.attitude.is_calibrated && cubli_bal.attitude.valid &&
                        cubli_bal.pose_tilt_deg<cubli_bal.capture_angle*RAD_TO_DEG) {
                         float *w=cubli_bal.attitude.gyro_rad;
@@ -470,7 +480,9 @@ void Control_SafetyTick(void) {
     uint8_t armed=m1_enabled || m2_enabled || m3_enabled;
     if(safety_trip) {Control_RequestStop(safety_trip);return;}
     if(armed || cubli_bal.state==BAL_STATE_STANDBY || cubli_bal.state==BAL_STATE_COUNTDOWN || cubli_bal.state==BAL_STATE_WAIT_POSE) {
-        if(now-last_ping_ms>1500) {Control_RequestStop(2);return;}
+        /* The heartbeat guard is suspended inside a standalone balance session;
+           the checks below stay active. */
+        if(!balance_standalone && now-last_ping_ms>1500) {Control_RequestStop(2);return;}
         if(!diagnostic_busy) {
             uint32_t us=micros();
             if((m1_enabled && us-encoder_diag[0].last_us>5000U) ||
@@ -495,7 +507,7 @@ void set_motor_enable(uint8_t motor,uint8_t en) {
     }
     __disable_irq();
     for(i=0;i<3;i++) if(motor==0 || motor==i+1) {
-        if(en && (safety_trip || HAL_GetTick()-last_ping_ms>1500 ||
+        if(en && (safety_trip || (!balance_standalone && HAL_GetTick()-last_ping_ms>1500) ||
                   !(GPIOG->IDR&(GPIO_PIN_9<<i)))) {
             Control_RequestStop(3); break;
         }
@@ -698,6 +710,7 @@ void commander_run(void) {
             if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartAuto(n==2?(uint8_t)v[1]:(cubli_bal.mode==BAL_MODE_CORNER?2:8))) {
                 printf("ERR BAUTO (ALIGN/CAL/AXIS/DIR/REF for the selected mode and L>BFULL required)\r\n");return;
             }
+            balance_standalone=1; /* the auto session may run with the cable unplugged */
         }
         printf("OK BAUTO:%d\r\n",(int)v[0]);
     } else if(!strcmp(name,"BFULL") && n==1 && v[0]>=10 && v[0]<velocity_limit) {
@@ -708,6 +721,7 @@ void commander_run(void) {
         if(!app_mode || !imu_online || !control_reset_latch() || !LQR_StartCountdown((uint8_t)v[0])) {
             printf("ERR BSTART (ALIGN/CAL_IMU/BAXIS/BDIR/BZERO required)\r\n");return;
         }
+        balance_standalone=1; /* the countdown may complete with the cable unplugged */
         printf("OK BSTART\r\n");
     } else if(!strcmp(name,"BPROBE") && n==2 && fabsf(v[0])<=6 && v[1]>=20 && v[1]<=120 && v[1]==(int)v[1]) {
         if(!app_mode || cubli_bal.state!=BAL_STATE_DISABLED || m1_enabled || m2_enabled || m3_enabled) {printf("ERR DISARM_FIRST_WORK_ONLY\r\n");return;}
