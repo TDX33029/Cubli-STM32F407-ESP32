@@ -25,6 +25,7 @@ This project is a complete open-source implementation of the Cubli balancing con
 | `History/` | Archived historical commits |
 | `Mechanical/` | Mechanical structure-related resource files |
 | `Software/` | Host controller source code and executables |
+| `Statistics/` | Parameter statistical data and curves |
 
 ## Demo & Preview
 
